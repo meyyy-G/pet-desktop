@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cat Diary</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <img src="./assets/Head.png" alt="" />
+        </div>
+        <div class="brand-title">Journal</div>
+      </div>
+
+      <div class="current-time">
+        <div id="today-number" class="date-number">6</div>
+        <div id="today-label" class="date-label">Mon.July</div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-page="home">
+          <span class="nav-icon"><img src="./assets/home.svg" alt="" /></span>
+          <span>Home</span>
+        </button>
+        <button class="nav-item" data-page="diary">
+          <span class="nav-icon"><img src="./assets/diary.svg" alt="" /></span>
+          <span>Diary</span>
+        </button>
+        <button class="nav-item" data-page="chat">
+          <span class="nav-icon"><img src="./assets/chat.svg" alt="" /></span>
+          <span>Chat</span>
+        </button>
+        <button class="nav-item" data-page="calendar">
+          <span class="nav-icon"><img src="./assets/calendar.svg" alt="" /></span>
+          <span>Calendar</span>
+        </button>
+      </nav>
+
+      <div class="week-strip">
+        <div class="week-title">THIS WEEK</div>
+        <div class="week-days">
+          <span>M</span>
+          <span>T</span>
+          <span>W</span>
+          <span>T</span>
+          <span>F</span>
+          <span>S</span>
+          <span>S</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="page active home-page" id="home">
+        <header class="page-header">
+          <h1 id="home-greeting">good afternoon,Mey.</h1>
+          <p id="home-date-line">Wednesday, July 1 · A good day to check in with yourself.</p>
+        </header>
+
+        <section class="mood-card">
+          <h2>HOW ARE YOU RIGHT NOW?</h2>
+            <div class="mood-row">
+              <button class="mood-button mood-stress" data-mood="Stress" data-tooltip="Feeling tense or under pressure">
+                Stress
+              </button>
+
+              <button class="mood-button mood-low" data-mood="Low" data-tooltip="Feeling low or lacking energy">
+                Low
+              </button>
+
+              <button class="mood-button mood-anxious" data-mood="Anxious" data-tooltip="Feeling uneasy or unable to relax">
+                Anxious
+              </button>
+
+              <button class="mood-button mood-steady" data-mood="Steady" data-tooltip="Feeling calm, stable, and balanced">
+                Steady
+              </button>
+
+              <button class="mood-button mood-light" data-mood="Light" data-tooltip="Feeling light, relaxed, and at ease">
+                Light
+              </button>
+
+              <button class="mood-button mood-inspired" data-mood="Inspired" data-tooltip="Feeling inspired and ready to create">
+                Inspired
+              </button>
+
+              <button class="mood-button mood-grateful" data-mood="Grateful" data-tooltip="Feeling thankful and appreciative">
+                Grateful
+              </button>
+            </div>
+        </section>
+
+        <div class="home-grid">
+          <section class="panel task-card">
+            <h2>Task List</h2>
+            <p class="panel-subtitle">Checklist Items</p>
+            <label><input type="checkbox" /> reading book</label>
+            <label><input type="checkbox" checked /> reply-email</label>
+            <label><input type="checkbox" /> resting 20 min</label>
+            <div class="progress-line">
+              <span>Progress</span>
+              <span>33%</span>
+            </div>
+            <div class="progress-bar">
+              <div></div>
+            </div>
+          </section>
+
+          <section class="panel mini-calendar-card">
+            <div id="mini-calendar-title" class="mini-calendar-title">MONTH</div>
+
+            <div class="mini-calendar-week">
+              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+            </div>
+
+            <div id="mini-calendar-grid" class="mini-calendar-grid"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page diary-page" id="diary">
+        <header class="page-header diary-header">
+          <p class="eyebrow">PERSONAL DIARY</p>
+          <h1 id="diary-title">Today</h1>
+          <p>Write what happened, what you did, and how you felt.</p>
+        </header>
+
+        <textarea
+          id="diary-editor"
+          class="editor"
+          placeholder="写下今天发生了什么、你做了什么、现在感觉怎么样..."
+        ></textarea>
+
+        <div class="actions">
+          <span id="save-status">Loading...</span>
+          <button id="discard-button">Discard</button>
+          <button id="save-button" class="primary">Save</button>
+        </div>
+      </section>
+
+      <section class="page chat-page" id="chat">
+        <header class="page-header">
+          <p class="eyebrow">AI COMPANION</p>
+          <h1>Chat with AI</h1>
+          <p>Here to listen, reflect, and think with you.</p>
+        </header>
+
+        <div class="chat-box">
+          <p>之后这里会接 GPT 对话。</p>
+        </div>
+      </section>
+
+      <section class="page calendar-page" id="calendar">
+        <header class="page-header">
+          <p class="eyebrow">CALENDAR</p>
+          <h1>Look back by date</h1>
+          <p>Choose a day to return to that entry.</p>
+        </header>
+
+        <div class="calendar-panel">
+          <div class="calendar-toolbar">
+            <button id="prev-month-button">&lsaquo;</button>
+            <h2 id="calendar-title">Month</h2>
+            <button id="next-month-button">&rsaquo;</button>
+          </div>
+
+          <div class="calendar-weekdays">
+            <span>Mon</span>
+            <span>Tue</span>
+            <span>Wed</span>
+            <span>Thu</span>
+            <span>Fri</span>
+            <span>Sat</span>
+            <span>Sun</span>
+          </div>
+
+          <div id="calendar-grid" class="calendar-grid"></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="pet-panel">
+      <div class="pet-stage">
+        <img src="../../../assets/animations/cat/normal/cat_01.png" alt="" />
+      </div>
+      <div class="pet-note">
+        <strong>Cat companion</strong>
+        <span>quietly staying with your work.</span>
+      </div>
+    </aside>
+  </div>
+
+  <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+  <div id="unsaved-modal" class="modal-backdrop">
+    <div class="modal">
+      <p class="modal-eyebrow">UNSAVED CHANGES</p>
+      <h2>Save this entry?</h2>
+      <p class="modal-desc">
+        You have changes that are not saved yet. Save them before opening another date?
+      </p>
+      <div class="modal-actions">
+        <button id="modal-cancel-button">Cancel</button>
+        <button id="modal-discard-button">Discard</button>
+        <button id="modal-save-button" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+  <div id="future-modal" class="modal-backdrop">
+    <div class="modal">
+      <p class="modal-eyebrow">NOT YET</p>
+      <h2>还未到该日期</h2>
+      <p class="modal-desc">
+        等到这一天来写吧。今天先记录现在发生的事。
+      </p>
+      <div class="modal-actions">
+        <button id="future-ok-button" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+  <div id="mood-tooltip" class="mood-tooltip"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
