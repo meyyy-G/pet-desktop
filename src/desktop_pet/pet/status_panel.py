@@ -1,24 +1,106 @@
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QLabel, QProgressBar, QVBoxLayout, QWidget
+from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ..paths import ASSETS_DIR
 
 
+class ImageProgressBar(QWidget):
+    """使用项目图片绘制的进度条，按数值裁剪内容图而不拉伸纹理。"""
+
+    WIDTH = 180
+    HEIGHT = 38
+    FILL_X = 6
+    FILL_Y = 6
+    FILL_WIDTH = 168
+    FILL_HEIGHT = 27
+
+    def __init__(self, fill_image: str, title: str, parent=None):
+        super().__init__(parent)
+        self._value = 0
+        self._title = title
+        self.setFixedSize(self.WIDTH, self.HEIGHT)
+
+        image_dir = ASSETS_DIR / "images" / "ui"
+        self._background = self._load_scaled(
+            image_dir / "bar.png",
+            self.WIDTH,
+            self.HEIGHT,
+        )
+        self._fill = self._load_scaled(
+            image_dir / fill_image,
+            self.FILL_WIDTH,
+            self.FILL_HEIGHT,
+        )
+
+    @staticmethod
+    def _load_scaled(path, width: int, height: int) -> QPixmap:
+        pixmap = QPixmap(str(path))
+        if pixmap.isNull():
+            return pixmap
+
+        return pixmap.scaled(
+            width,
+            height,
+            Qt.AspectRatioMode.IgnoreAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+    def setValue(self, value: int) -> None:
+        """保持与原 QProgressBar 相同的调用方式。"""
+        normalized_value = max(0, min(100, int(value)))
+        if normalized_value == self._value:
+            return
+
+        self._value = normalized_value
+        self.update()
+
+    def paintEvent(self, event) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+
+        if not self._background.isNull():
+            painter.drawPixmap(0, 0, self._background)
+
+        visible_width = round(self.FILL_WIDTH * self._value / 100)
+        if visible_width > 0 and not self._fill.isNull():
+            painter.save()
+            painter.setClipRect(
+                self.FILL_X,
+                self.FILL_Y,
+                visible_width,
+                self.FILL_HEIGHT,
+            )
+            painter.drawPixmap(self.FILL_X, self.FILL_Y, self._fill)
+            painter.restore()
+
+        painter.setPen(Qt.GlobalColor.black)
+        font = painter.font()
+        font.setPixelSize(11)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.drawText(
+            self.rect(),
+            Qt.AlignmentFlag.AlignCenter,
+            f"{self._title} {self._value}%",
+        )
+
+
 class StatusPanel(QWidget):
     PANEL_WIDTH = 220
-    PANEL_HEIGHT = 44
+    BAR_SPACING = 4
+    PANEL_HEIGHT = ImageProgressBar.HEIGHT * 2 + BAR_SPACING
     # 三种云朵的显示尺寸。尺寸保持原图比例，同时限制在桌宠窗口宽度内。
     CLOUD_SIZES = {
-        "s": (120, 80),
-        "m": (160, 86),
-        "l": (220, 74),
+        "s": (105, 70),
+        "m": (140, 76),
+        "l": (190, 64),
     }
     # 文字区域比图片稍窄，避免文字碰到云朵边框。
     CLOUD_TEXT_WIDTHS = {
-        "s": 92,
-        "m": 132,
-        "l": 190,
+        "s": 78,
+        "m": 112,
+        "l": 160,
     }
     CLOUD_MAX_HEIGHT = max(height for _, height in CLOUD_SIZES.values())
     CLOUD_GAP = 10
@@ -104,51 +186,24 @@ class StatusPanel(QWidget):
         self._position_cloud()
 
     def _setup_bars(self) -> None:
-        self.hunger_bar = QProgressBar(self.bars_panel)
-        self.hunger_bar.setFixedHeight(18)
-        self.hunger_bar.setRange(0, 100)
-        self.hunger_bar.setTextVisible(True)
-        self.hunger_bar.setFormat("饱食度 %p%")
-        self.hunger_bar.setStyleSheet("""
-            QProgressBar {
-                height: 14px;
-                border: 1px solid rgba(120, 92, 70, 160);
-                border-radius: 5px;
-                background: rgba(255, 255, 255, 190);
-                color: #3a2f2a;
-                font-size: 12px;
-            }
-            QProgressBar::chunk {
-                border-radius: 5px;
-                background: #f0a15f;
-            }
-        """)
-
-        self.mood_bar = QProgressBar(self.bars_panel)
-        self.mood_bar.setFixedHeight(18)
-        self.mood_bar.setRange(0, 100)
-        self.mood_bar.setTextVisible(True)
-        self.mood_bar.setFormat("Mood %p%")
-        self.mood_bar.setStyleSheet("""
-            QProgressBar {
-                height: 14px;
-                border: 1px solid rgba(120, 92, 70, 160);
-                border-radius: 5px;
-                background: rgba(255, 255, 255, 190);
-                color: #3a2f2a;
-                font-size: 12px;
-            }
-            QProgressBar::chunk {
-                border-radius: 5px;
-                background: #f3c84f;
-            }
-        """)
+        self.hunger_bar = ImageProgressBar(
+            "red.png",
+            "饱食度",
+            self.bars_panel,
+        )
+        self.mood_bar = ImageProgressBar(
+            "blue.png",
+            "心情值",
+            self.bars_panel,
+        )
 
         layout = QVBoxLayout(self.bars_panel)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(self.BAR_SPACING)
+        layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         layout.addWidget(self.hunger_bar)
         layout.addWidget(self.mood_bar)
+        self.bars_panel.setFixedHeight(self.PANEL_HEIGHT)
 
     def update_position(self, window_width: int, pet_x: int) -> None:
         self._window_width = window_width

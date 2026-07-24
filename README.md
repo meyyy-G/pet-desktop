@@ -86,9 +86,64 @@ This project is still under active development.
 
 ## 📸 Preview
 
-*(Screenshots coming soon)*
+<table>
+<tr>
+<td align="center">
 
----
+### Looking
+
+<img src="assets/images/pet-1.gif" width="320">
+
+</td>
+
+<td align="center">
+
+### Sitting
+
+<img src="assets/images/pet-2.gif" width="320">
+
+</td>
+</tr>
+
+<tr>
+<td align="center">
+
+### Laydown
+
+<img src="assets/images/pet-3.gif" width="320">
+
+</td>
+
+<td align="center">
+
+### Sleeping
+
+<img src="assets/images/pet-4.gif" width="320">
+
+</td>
+</tr>
+
+<tr>
+<td align="center" colspan="2">
+
+### Drag Interaction
+
+<img src="assets/images/pet-5.gif" width="500">
+
+</td>
+</tr>
+
+<tr>
+<td align="center" colspan="2">
+
+### Diary System
+
+<img src="assets/images/diary.gif" width="900">
+
+</td>
+</tr>
+
+</table>
 
 ## 📄 License
 
