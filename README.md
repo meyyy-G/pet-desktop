@@ -86,64 +86,31 @@ This project is still under active development.
 
 ## 📸 Preview
 
-<table>
-<tr>
-<td align="center">
+### 🐱 Desktop Pet
 
-### Looking
+<p align="center">
+  <img src="assets/images/pet-1.gif" width="170">
+  <img src="assets/images/pet-2.gif" width="170">
+  <img src="assets/images/pet-3.gif" width="170">
+  <img src="assets/images/pet-4.gif" width="170">
+  <img src="assets/images/pet-5.gif" width="170">
+</p>
 
-<img src="assets/images/pet-1.gif" width="320">
+<p align="center">
+  <em>Natural animation state transitions: Looking → Sitting → Gaping → Laydown → Drag Interaction</em>
+</p>
 
-</td>
+---
 
-<td align="center">
+### 📖 Diary System
 
-### Sitting
+<p align="center">
+  <img src="assets/images/diary.gif" width="900">
+</p>
 
-<img src="assets/images/pet-2.gif" width="320">
-
-</td>
-</tr>
-
-<tr>
-<td align="center">
-
-### Laydown
-
-<img src="assets/images/pet-3.gif" width="320">
-
-</td>
-
-<td align="center">
-
-### Sleeping
-
-<img src="assets/images/pet-4.gif" width="320">
-
-</td>
-</tr>
-
-<tr>
-<td align="center" colspan="2">
-
-### Drag Interaction
-
-<img src="assets/images/pet-5.gif" width="500">
-
-</td>
-</tr>
-
-<tr>
-<td align="center" colspan="2">
-
-### Diary System
-
-<img src="assets/images/diary.gif" width="900">
-
-</td>
-</tr>
-
-</table>
+<p align="center">
+  <em>Write daily journals with calendar navigation and mood tracking.</em>
+</p>
 
 ## 📄 License
 
