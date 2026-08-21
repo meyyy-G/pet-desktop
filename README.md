@@ -59,7 +59,7 @@
 
 可以拖动小猫，也可以通过右键菜单进行喂食、玩耍和睡觉等互动。
 
-<p align="center"><img src="assets/images/互动.gif" width="520" alt="Pet interaction"></p>
+<p align="center"><img src="assets/images/互动.gif" width="360" alt="Pet interaction"></p>
 
 ---
 
