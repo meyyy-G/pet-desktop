@@ -82,6 +82,13 @@
 
 ---
 
+### 🐱也会陪着你记录
+<p align="center">
+  <img src="assets/images/看你打字.gif" width="260" alt="Cat watching user type">
+</p>
+
+---
+
 ### 📖 日记系统
 
 - 按日期创建和查看日记
@@ -90,15 +97,6 @@
 - 日历日期导航
 - 已记录日期高亮
 - 输入日记时触发专属桌宠动画
-
-<p align="center"><img src="assets/images/app_diary.png" width="900" alt="Diary page"></p>
-
-<p align="center">
-  <img src="assets/images/日记端盒子猫.gif" width="180" alt="Cat opening diary">
-  <img src="assets/images/看你打字.gif" width="260" alt="Cat watching user type">
-</p>
-
-<p align="center"><em>当你打开日记并开始输入时，小猫也会在旁边陪着你。</em></p>
 
 ---
 
