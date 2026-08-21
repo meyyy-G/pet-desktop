@@ -11,16 +11,22 @@ class PetAnimation(QObject):
     state_finished = Signal(str)
 
     FRAME_PATTERN = {
-        "idle": ("normal", "looking_", 6),  # 默认待机
-        "sitting": ("normal", "sitting_", 10),
-        "gaping": ("gape", "gaping_", 8),
-        "laydown": ("gape", "laydown_", 12),
-        "hungry": ("hungry", "hry_cat_", 8),
-        "eat": ("hungry", "eat_rect_", 15),
-        "play": ("play", "dance_", 4),
-        "sleeping": ("sleepy", "sleeping_", 4),
-        "touch": ("touched", "tch_rect_", 12),
-        "carry": ("rect", "carry_cat_", 12),
+        "idle": ("standy_rect/looking", "looking_", 6),
+        "sitting": ("standy_rect/idle", "sitting_", 10),
+        "gaping": ("standy_rect/gap", "gaping_", 8),
+        "laydown": ("standy_rect/laydown", "laydown_", 12),
+        "eat": ("interactive_rect/feed", "eat_rect_", 15),
+        "play": ("interactive_rect/play", "dance_", 4),
+        "sleeping": ("interactive_rect/sleep", "sleeping_", 4),
+        "touch": ("interactive_rect/touch", "tch_rect_", 12),
+        "carry": ("interactive_rect/carry", "carry_cat_", 12),
+        "upset": ("need_rect/upset", "upset_", 3),
+        "angry": ("need_rect/angry", "angry_", 9),
+        "die": ("need_rect/die", "die_", 5),
+        "sleepy": ("need_rect/sleepy", "slpy_cat_", 9),
+        "sleep": ("need_rect/sleep", "sleeping_", 4),
+        "cry": ("need_rect/cry", "cry_", 4),
+        "sick": ("need_rect/sick", "sick_", 4),
     }
 
     STATE_INTERVALS = {
@@ -29,12 +35,18 @@ class PetAnimation(QObject):
         "sitting": 180,
         "gaping": 180,
         "laydown": 180,
-        "hungry": 140,
         "eat": 120,
         "play": 130,
         "sleeping": 180,
         "touch": 140,
         "carry": 140,
+        "upset": 140,
+        "angry": 140,
+        "die": 140,
+        "sleepy": 180,
+        "sleep": 180,
+        "cry": 180,
+        "sick": 180,
 
         "diary_open_enter": 150,
         "diary_open_exit": 150,
@@ -172,8 +184,10 @@ class PetAnimation(QObject):
             fallback = (
                     ASSETS_DIR
                     / "animations"
-                    / "loading"
-                    / "cat_9_0.png"
+                    / "cat"
+                    / "standy_rect"
+                    / "idle"
+                    / "sitting.png"
             )
 
             if fallback.exists():

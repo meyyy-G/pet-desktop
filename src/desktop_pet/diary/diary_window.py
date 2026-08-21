@@ -1,11 +1,10 @@
-from pathlib import Path
-
 from PySide6.QtCore import QUrl, Signal
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
 
+from ..paths import WEB_DIR
 from .diary_bridge import DiaryBridge
 
 
@@ -18,8 +17,16 @@ class DiaryWindow(QWidget):
         super().__init__()
 
         self.setWindowTitle("今日手帐")
-        self.resize(1440, 800)
-        self.setMinimumSize(1100, 700)
+        # 默认以较小的普通窗口启动；用户最大化后由系统窗口和 Web 布局共同填满屏幕。
+        available_geometry = self.screen().availableGeometry()
+        default_width = min(1200, available_geometry.width())
+        default_height = min(820, available_geometry.height())
+        self.setMinimumSize(960, 700)
+        self.resize(default_width, default_height)
+        self.move(
+            available_geometry.x() + (available_geometry.width() - default_width) // 2,
+            available_geometry.y() + (available_geometry.height() - default_height) // 2,
+        )
 
         self.web_view = QWebEngineView(self)
         self.web_view.settings().setAttribute(
@@ -40,7 +47,7 @@ class DiaryWindow(QWidget):
         layout.addWidget(self.web_view)
 
         # 正式加载独立的 Web 页面和拆分后的 JavaScript 模块。
-        html_path = Path(__file__).resolve().parent.parent / "web" / "index.html"
+        html_path = WEB_DIR / "index.html"
         self.web_view.load(QUrl.fromLocalFile(str(html_path)))
 
     def _save_from_web(self):

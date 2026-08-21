@@ -3,29 +3,35 @@ from dataclasses import dataclass
 
 @dataclass
 class PetState:
-    hunger: int = 80
+    """桌宠的可保存数值状态。"""
+
+    satiety: int = 80
     mood: int = 80
+    energy: int = 80
     current_animation: str = "idle"
 
-    def feed(self) -> str:
-        self.hunger = min(100, self.hunger + 15)
-        self.mood = min(100, self.mood + 3)
+    def feed(self) -> None:
+        self.satiety = min(100, self.satiety + 15)
+        self.energy = min(100, self.energy + 2)
         self.current_animation = "eat"
-        return "喵，吃饱一点了。"
 
-    def play(self) -> str:
+    def can_play(self) -> bool:
+        return self.satiety > 20 and self.energy > 20
+
+    def play(self) -> None:
+        if not self.can_play():
+            return
+
         self.mood = min(100, self.mood + 12)
-        self.hunger = max(0, self.hunger - 3)
+        self.satiety = max(0, self.satiety - 3)
+        self.energy = max(0, self.energy - 3)
         self.current_animation = "play"
-        return "喵，开心。"
 
-    def sleep(self) -> str:
-        self.hunger = max(0, self.hunger - 2)
-        self.mood = min(100, self.mood + 6)
+    def sleep(self) -> None:
+        self.satiety = max(0, self.satiety - 2)
+        self.energy = min(100, self.energy + 12)
         self.current_animation = "sleeping"
-        return "喵，想睡一会儿。"
 
-    def touch(self) -> str:
-        self.mood = min(100, self.mood + 5)
+    def touch(self) -> None:
+        self.mood = min(100, self.mood + 2)
         self.current_animation = "touch"
-        return "喵"

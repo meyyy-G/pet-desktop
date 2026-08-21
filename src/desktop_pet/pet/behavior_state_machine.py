@@ -6,15 +6,15 @@ from .animation import PetAnimation
 
 
 class BehaviorState(Enum):
-    """桌宠的高层行为状态。
-
-    这里不保存具体帧，只负责决定当前应该播放哪一种动画。
+    """
+    决定现在应该播放什么动画
     """
 
     IDLE = "idle"
     SITTING = "sitting"
     GAPING = "gaping"
     LAYDOWN = "laydown"
+    NEED = "need"
     TEMPORARY = "temporary"
 
 
@@ -23,10 +23,10 @@ class PetBehaviorStateMachine(QObject):
 
     state_changed = Signal(str)
 
-    # 当前先使用秒级测试值。确认后改成 10/20/30 * 60 * 1000 即可。
-    SITTING_AFTER_MS = 10_000
-    GAPING_AFTER_MS = 20_000
-    LAYDOWN_AFTER_MS = 30_000
+    # 无互动 10/20/30 分钟后依次进入坐下、打哈欠和躺下状态。
+    SITTING_AFTER_MS = 10 * 60 * 1000
+    GAPING_AFTER_MS = 20 * 60 * 1000
+    LAYDOWN_AFTER_MS = 30 * 60 * 1000
     INACTIVITY_CHECK_MS = 250
 
     def __init__(self, animation: PetAnimation, parent=None):
@@ -38,6 +38,7 @@ class PetBehaviorStateMachine(QObject):
         self._inactivity_clock.start()
         self._played_inactivity_gaping = False
         self._pending_natural_gaping = False
+        self._need_animation: str | None = None
 
         # 整个无互动系统只使用这一个周期 Timer。
         self.inactivity_timer = QTimer(self)
@@ -51,7 +52,7 @@ class PetBehaviorStateMachine(QObject):
         self.temporary_timer.timeout.connect(self.finish_temporary)
 
         self.animation.state_finished.connect(self._handle_animation_finished)
-        self._transition(BehaviorState.IDLE, "idle")
+        self._resume_current_state()
 
     @property
     def inactivity_ms(self) -> int:
@@ -63,7 +64,7 @@ class PetBehaviorStateMachine(QObject):
         self._pending_natural_gaping = False
         self._played_inactivity_gaping = False
         self._inactivity_clock.restart()
-        self._transition(BehaviorState.IDLE, "idle")
+        self._resume_current_state()
 
     def play_temporary(
         self,
@@ -95,10 +96,29 @@ class PetBehaviorStateMachine(QObject):
         self._pending_natural_gaping = False
         self._played_inactivity_gaping = False
         self._inactivity_clock.restart()
+
+        if self._need_animation is not None:
+            self._transition(BehaviorState.NEED, self._need_animation)
+            return
+
         self._transition(BehaviorState.IDLE, "idle")
 
         if should_play_pending_gaping:
             self._start_gaping(from_inactivity=False)
+
+    def update_need_animation(self, animation_state: str | None) -> None:
+        """Update the body need animation without interrupting temporary actions."""
+        self._need_animation = animation_state
+
+        if self.state is BehaviorState.TEMPORARY:
+            return
+
+        if animation_state is not None:
+            self._transition(BehaviorState.NEED, animation_state)
+            return
+
+        if self.state is BehaviorState.NEED:
+            self._resume_natural_behavior()
 
     def notify_natural_state_drop(self) -> None:
         """状态值自然下降后调用；临时动画期间只合并为一次待播放请求。"""
@@ -106,17 +126,34 @@ class PetBehaviorStateMachine(QObject):
             self._pending_natural_gaping = True
             return
 
-        if self.state is BehaviorState.GAPING:
+        if self.state in (BehaviorState.GAPING, BehaviorState.NEED):
             return
 
         self._start_gaping(from_inactivity=False)
 
     def update_inactivity(self, elapsed_ms: int | None = None) -> None:
         """根据无互动时长更新姿态；可传入时间用于快速自动化测试。"""
-        if self.state in (BehaviorState.TEMPORARY, BehaviorState.GAPING):
+        if self.state in (
+            BehaviorState.TEMPORARY,
+            BehaviorState.GAPING,
+            BehaviorState.NEED,
+        ):
             return
 
         elapsed = self.inactivity_ms if elapsed_ms is None else elapsed_ms
+
+        self._apply_natural_behavior(elapsed)
+
+    def _resume_current_state(self) -> None:
+        if self._need_animation is not None:
+            self._transition(BehaviorState.NEED, self._need_animation)
+        else:
+            self._transition(BehaviorState.IDLE, "idle")
+
+    def _resume_natural_behavior(self) -> None:
+        self._apply_natural_behavior(self.inactivity_ms)
+
+    def _apply_natural_behavior(self, elapsed: int) -> None:
 
         if elapsed >= self.LAYDOWN_AFTER_MS:
             self._transition(BehaviorState.LAYDOWN, "laydown")

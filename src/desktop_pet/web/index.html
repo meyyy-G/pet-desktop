@@ -4,9 +4,13 @@
   <meta charset="UTF-8" />
   <title>Cat Diary</title>
   <link rel="stylesheet" href="./style.css" />
+  <link rel="stylesheet" href="./home-v2.css" />
+  <link rel="stylesheet" href="./diary-v2.css" />
+  <link rel="stylesheet" href="./chat-v2.css" />
+  <link rel="stylesheet" href="./calendar-v2.css" />
 </head>
 <body>
-  <div class="app">
+  <div class="app app-v2" data-active-page="home">
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">
@@ -17,25 +21,33 @@
 
       <div class="current-time">
         <div id="today-number" class="date-number">6</div>
-        <div id="today-label" class="date-label">Mon.July</div>
+        <div id="today-label" class="date-label">Mon·July</div>
       </div>
 
       <nav class="nav">
         <button class="nav-item active" data-page="home">
-          <span class="nav-icon"><img src="./assets/home.svg" alt="" /></span>
+          <span class="nav-icon"><img src="./assets/nav-home.svg" alt="" /></span>
           <span>Home</span>
         </button>
         <button class="nav-item" data-page="diary">
-          <span class="nav-icon"><img src="./assets/diary.svg" alt="" /></span>
+          <span class="nav-icon"><img src="./assets/nav-diary.svg" alt="" /></span>
           <span>Diary</span>
         </button>
         <button class="nav-item" data-page="chat">
-          <span class="nav-icon"><img src="./assets/chat.svg" alt="" /></span>
+          <span class="nav-icon"><img src="./assets/nav-chat.svg" alt="" /></span>
           <span>Chat</span>
         </button>
         <button class="nav-item" data-page="calendar">
-          <span class="nav-icon"><img src="./assets/calendar.svg" alt="" /></span>
+          <span class="nav-icon"><img src="./assets/nav-calendar.svg" alt="" /></span>
           <span>Calendar</span>
+        </button>
+        <button class="nav-item nav-item-pending" type="button" disabled>
+          <span class="nav-icon"><img src="./assets/nav-task.svg" alt="" /></span>
+          <span>Task</span>
+        </button>
+        <button class="nav-item nav-item-pending" type="button" disabled>
+          <span class="nav-icon"><img src="./assets/nav-focus.svg" alt="" /></span>
+          <span>Focus</span>
         </button>
       </nav>
 
@@ -56,7 +68,7 @@
     <main class="main">
       <section class="page active home-page" id="home">
         <header class="page-header">
-          <h1 id="home-greeting">good afternoon,Mey.</h1>
+          <h1 id="home-greeting">Good afternoon,Mey.</h1>
           <p id="home-date-line">Wednesday, July 1 · A good day to check in with yourself.</p>
         </header>
 
@@ -94,23 +106,59 @@
         </section>
 
         <div class="home-grid">
-          <section class="panel task-card">
-            <h2>Task List</h2>
-            <p class="panel-subtitle">Checklist Items</p>
-            <label><input type="checkbox" /> reading book</label>
-            <label><input type="checkbox" checked /> reply-email</label>
-            <label><input type="checkbox" /> resting 20 min</label>
+          <section class="panel task-card" aria-labelledby="task-list-title">
+            <h2 id="task-list-title">Task List</h2>
+            <div class="task-list-heading">
+              <p class="panel-subtitle">Checklist Items</p>
+              <button id="task-add-button" class="task-add-button" type="button" aria-label="Add task">+</button>
+            </div>
+            <div id="task-items" class="task-items">
+              <div class="task-row" data-task-id="reading-book">
+                <label><input class="task-checkbox" type="checkbox" /><span class="task-checkbox-visual"></span></label>
+                <input class="task-description" value="reading book" aria-label="Task description" />
+                <button class="task-delete-button" type="button" aria-label="Delete reading book">×</button>
+              </div>
+              <div class="task-row" data-task-id="reply-email">
+                <label><input class="task-checkbox" type="checkbox" checked /><span class="task-checkbox-visual"></span></label>
+                <input class="task-description" value="reply email" aria-label="Task description" />
+                <button class="task-delete-button" type="button" aria-label="Delete reply email">×</button>
+              </div>
+              <div class="task-row" data-task-id="resting-20-min">
+                <label><input class="task-checkbox" type="checkbox" checked /><span class="task-checkbox-visual"></span></label>
+                <input class="task-description" value="resting 20 min" aria-label="Task description" />
+                <button class="task-delete-button" type="button" aria-label="Delete resting 20 min">×</button>
+              </div>
+              <div class="task-row" data-task-id="new-task">
+                <label><input class="task-checkbox" type="checkbox" /><span class="task-checkbox-visual"></span></label>
+                <input class="task-description" placeholder="Add description..." aria-label="Task description" />
+                <button class="task-delete-button" type="button" aria-label="Delete task">×</button>
+              </div>
+            </div>
             <div class="progress-line">
               <span>Progress</span>
-              <span>33%</span>
+              <span id="task-progress-text">50%</span>
             </div>
-            <div class="progress-bar">
-              <div></div>
+            <div
+              id="task-progress-bar"
+              class="progress-bar"
+              role="progressbar"
+              aria-label="Task completion"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow="50"
+            >
+              <div id="task-progress-fill"></div>
             </div>
           </section>
 
           <section class="panel mini-calendar-card">
-            <div id="mini-calendar-title" class="mini-calendar-title">MONTH</div>
+            <div class="mini-calendar-head">
+              <div id="mini-calendar-title" class="mini-calendar-title">MONTH</div>
+              <div class="mini-calendar-turn" aria-label="Change month">
+                <button id="mini-prev-month-button" type="button" aria-label="Previous month">‹</button>
+                <button id="mini-next-month-button" type="button" aria-label="Next month">›</button>
+              </div>
+            </div>
 
             <div class="mini-calendar-week">
               <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
@@ -122,74 +170,204 @@
       </section>
 
       <section class="page diary-page" id="diary">
-        <header class="page-header diary-header">
-          <p class="eyebrow">PERSONAL DIARY</p>
-          <h1 id="diary-title">Today</h1>
-          <p>Write what happened, what you did, and how you felt.</p>
-        </header>
+        <div class="diary-v2-content">
+          <header class="diary-v2-header">
+            <p class="diary-v2-eyebrow">Personal Diary</p>
+            <h1 id="diary-title">Wednesday, July 1</h1>
+            <p id="diary-year">2026</p>
+          </header>
 
-        <textarea
-          id="diary-editor"
-          class="editor"
-          placeholder="写下今天发生了什么、你做了什么、现在感觉怎么样..."
-        ></textarea>
+          <section class="diary-recent" aria-labelledby="recent-entries-title">
+            <h2 id="recent-entries-title">Recent Entries</h2>
+            <div class="diary-recent-grid">
+              <button class="diary-recent-card" type="button" data-offset="-1">
+                <span class="diary-recent-card-head"><strong>Tuesday, June 30</strong><small>120 words</small></span>
+                <span>Reflecting on the garden growth and the quiet morning hours before the sun peaks.</span>
+              </button>
+              <button class="diary-recent-card" type="button" data-offset="-2">
+                <span class="diary-recent-card-head"><strong>Monday, June 29</strong><small>85 words</small></span>
+                <span>A busy day at the studio, but managed to find a few moments of stillness during lunch.</span>
+              </button>
+              <button class="diary-recent-card" type="button" data-offset="-3">
+                <span class="diary-recent-card-head"><strong>Sunday, June 28</strong><small>210 words</small></span>
+                <span>Weekend thoughts on planning the upcoming trip and setting intentions for the month.</span>
+              </button>
+            </div>
+          </section>
 
-        <div class="actions">
-          <span id="save-status">Loading...</span>
-          <button id="discard-button">Discard</button>
-          <button id="save-button" class="primary">Save</button>
+          <section class="diary-editor-shell" aria-label="Diary editor">
+            <div class="diary-toolbar" role="toolbar" aria-label="Text formatting">
+              <button type="button" data-editor-command="undo" aria-label="Undo"><img src="./assets/undo-arrow.svg" alt="" /></button>
+              <button type="button" data-editor-command="redo" aria-label="Redo"><img src="./assets/redo-arrow.svg" alt="" /></button>
+              <button type="button" data-editor-command="h1">H1</button>
+              <button type="button" data-editor-command="h2">H2</button>
+              <button type="button" data-editor-command="bullet" aria-label="Bulleted list"><img src="./assets/bulleted-list.svg" alt="" /></button>
+              <button type="button" data-editor-command="number" aria-label="Numbered list"><img src="./assets/numbered-list.svg" alt="" /></button>
+              <span class="diary-toolbar-separator"></span>
+              <button type="button" data-editor-command="bold" aria-label="Bold"><b>B</b></button>
+              <button type="button" data-editor-command="italic" aria-label="Italic"><img src="./assets/text-italic.svg" alt="" /></button>
+              <button type="button" data-editor-command="underline" aria-label="Underline"><img src="./assets/text-underline.svg" alt="" /></button>
+              <button type="button" data-editor-command="rule" aria-label="Divider"><img src="./assets/diary-rule.svg" alt="" /></button>
+              <button type="button" data-editor-command="link" aria-label="Link"><img src="./assets/link.svg" alt="" /></button>
+              <button class="diary-expand-button" type="button" aria-label="Expand editor"><img src="./assets/diary-expand-icon.svg" alt="" /></button>
+            </div>
+
+            <div class="diary-editor-body">
+              <p class="diary-mood-label">Today's Mood:</p>
+              <span class="diary-mood-pill"><span></span>Steady</span>
+              <p class="diary-prompt">Start with a single sentence. What did you notice today?</p>
+              <textarea id="diary-editor" class="diary-v2-editor" placeholder="Start writing your day..."></textarea>
+            </div>
+          </section>
+
+          <footer class="diary-editor-footer">
+            <div class="diary-entry-stats">
+              <span class="diary-stat diary-stat-words"><span aria-hidden="true"></span><span id="diary-word-count">0 words</span></span>
+              <span class="diary-stat diary-stat-save"><span aria-hidden="true"></span><span id="save-status">Loading...</span></span>
+            </div>
+            <div class="diary-v2-save-actions">
+              <span class="diary-hidden-actions">
+                <button id="discard-button" type="button">Discard changes</button>
+                <button id="save-button" type="button">Save entry</button>
+              </span>
+              <button id="previous-entry-button" type="button">Previous entries <img src="./assets/diary-arrow-right.svg" alt="" /></button>
+            </div>
+          </footer>
         </div>
       </section>
 
       <section class="page chat-page" id="chat">
-        <header class="page-header">
-          <p class="eyebrow">AI COMPANION</p>
-          <h1>Chat with AI</h1>
-          <p>Here to listen, reflect, and think with you.</p>
-        </header>
+        <div class="chat-v2-content">
+          <header class="chat-v2-header">
+            <h1>AI COMPANION</h1>
+            <p>Chat with AI; here to listen, reflect, and think with you.</p>
+          </header>
 
-        <div class="chat-box">
-          <p>之后这里会接 GPT 对话。</p>
+          <div id="chat-message-list" class="chat-message-list" aria-live="polite">
+            <article class="chat-message chat-message-assistant">
+              <img src="./assets/heart-circle.svg" alt="" />
+              <div>
+                <p>Good morning, Emma. I’m here whenever you’re ready — to think out loud, process your day, or simply share what’s on your mind.</p>
+                <time>9:14AM</time>
+              </div>
+            </article>
+          </div>
+
+          <form id="chat-compose-form" class="chat-compose-form">
+            <label class="sr-only" for="chat-input">Message AI companion</label>
+            <textarea id="chat-input" rows="1" placeholder="Share what on your mind..."></textarea>
+            <button id="chat-send-button" type="submit" aria-label="Send message">
+              <img src="./assets/send.svg" alt="" />
+            </button>
+            <p>Live in now · Safe &amp; Great for a new life</p>
+          </form>
         </div>
       </section>
 
       <section class="page calendar-page" id="calendar">
-        <header class="page-header">
-          <p class="eyebrow">CALENDAR</p>
-          <h1>Look back by date</h1>
-          <p>Choose a day to return to that entry.</p>
-        </header>
+        <div class="calendar-v2-content">
+          <header class="calendar-v2-header">
+            <div>
+              <p>Calendar</p>
+              <h1 id="calendar-title">July 2026</h1>
+            </div>
+            <div class="calendar-v2-controls" aria-label="Change calendar month">
+              <button id="prev-month-button" type="button" aria-label="Previous month">‹</button>
+              <button id="next-month-button" type="button" aria-label="Next month">›</button>
+              <button id="today-calendar-button" class="calendar-today-button" type="button">
+                <img src="./assets/calendar.svg" alt="" />Today
+              </button>
+            </div>
+          </header>
 
-        <div class="calendar-panel">
-          <div class="calendar-toolbar">
-            <button id="prev-month-button">&lsaquo;</button>
-            <h2 id="calendar-title">Month</h2>
-            <button id="next-month-button">&rsaquo;</button>
+          <div class="calendar-v2-panel">
+            <div class="calendar-weekdays">
+              <span>Sun</span>
+              <span>Mon</span>
+              <span>Tue</span>
+              <span>Wed</span>
+              <span>Thu</span>
+              <span>Fri</span>
+              <span>Sat</span>
+            </div>
+            <div id="calendar-grid" class="calendar-grid"></div>
           </div>
-
-          <div class="calendar-weekdays">
-            <span>Mon</span>
-            <span>Tue</span>
-            <span>Wed</span>
-            <span>Thu</span>
-            <span>Fri</span>
-            <span>Sat</span>
-            <span>Sun</span>
-          </div>
-
-          <div id="calendar-grid" class="calendar-grid"></div>
         </div>
       </section>
     </main>
 
-    <aside class="pet-panel">
-      <div class="pet-stage">
-        <img src="../../../assets/animations/cat/normal/cat_01.png" alt="" />
-      </div>
-      <div class="pet-note">
-        <strong>Cat companion</strong>
-        <span>quietly staying with your work.</span>
-      </div>
+    <aside class="right-sidebar-v2" aria-label="Daily summary">
+      <section class="v2-snapshot">
+        <div class="v2-eyebrow"><span class="v2-status-dot"></span>Daily Snapshot</div>
+        <div class="v2-snapshot-line">
+          <strong>Steady</strong>
+          <span>Grounded &amp; Calm</span>
+        </div>
+      </section>
+
+      <div class="v2-divider"></div>
+
+      <section class="v2-focus-section">
+        <h2>Focus</h2>
+        <div class="v2-focus-line">
+          <strong>2h 35m</strong>
+          <button class="v2-play-button" type="button" aria-label="Start focus"><img src="./assets/right-play.svg" alt="" /></button>
+        </div>
+        <p class="v2-micro-label">Study · 2 of 3 session</p>
+        <div class="v2-focus-progress" aria-hidden="true">
+          <span></span><span></span>
+        </div>
+      </section>
+
+      <div class="v2-divider"></div>
+
+      <section class="v2-daily-progress">
+        <div class="v2-section-head v2-eyebrow">
+          <span>Daily Progress</span>
+          <span id="right-task-count">2/4 task</span>
+        </div>
+        <div class="v2-progress-summary">
+          <div><strong id="right-task-progress-text">50%</strong> <span>Completed</span></div>
+          <span class="v2-pace"><img src="./assets/right-trend.svg" alt="" />+8% Pace</span>
+        </div>
+        <div class="v2-task-progress-track">
+          <span id="right-task-progress-fill"></span>
+        </div>
+        <p class="v2-progress-note">You're currently ahead of your 7-day average for task completion at this hour.</p>
+        <ul id="right-task-list" hidden></ul>
+      </section>
+
+      <div class="v2-divider"></div>
+
+      <section class="v2-journal-insight">
+        <h2 class="v2-eyebrow">Journal Insight</h2>
+        <blockquote>“Today I noticed the way light<br />comes through my window<br />during the golden hour. It<br />made the entire workspace<br />feel like it was breathing with<br />me.”</blockquote>
+        <div class="v2-journal-meta"><span><b>128</b> words · 9:42PM</span><img src="./assets/right-chevron.svg" alt="" /></div>
+      </section>
+
+      <div class="v2-divider"></div>
+
+      <section class="v2-observation">
+        <h2 class="v2-eyebrow"><img src="./assets/right-observation.svg" alt="" />Smart Observation</h2>
+        <p>You're <strong>15% more focused</strong> than<br />yesterday at this time. Your<br />morning “Study” sessions seem<br />to be your peak performance<br />window.</p>
+      </section>
+
+      <nav class="v2-quick-actions" aria-label="Quick actions">
+        <button class="v2-quick-action" type="button" data-page="diary">
+          <span><img src="./assets/right-diary.svg" alt="" /></span>
+          New Diary
+        </button>
+        <button class="v2-quick-action" type="button" data-page="chat">
+          <span><img src="./assets/right-chat.svg" alt="" /></span>
+          New Chat
+        </button>
+        <button class="v2-quick-action" type="button" data-action="new-task">
+          <span><img src="./assets/right-task.svg" alt="" /></span>
+          New Task
+        </button>
+      </nav>
+
+      <p class="v2-version">PET DESKTOP V2.4</p>
     </aside>
   </div>
 

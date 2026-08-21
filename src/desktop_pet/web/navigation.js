@@ -3,6 +3,8 @@ import { dom } from "./dom.js";
 // 导航模块：只负责左侧导航和页面显示切换。
 
 export function showPage(pageName) {
+  if (dom.app) dom.app.dataset.activePage = pageName;
+
   dom.navItems.forEach((item) => {
     item.classList.toggle("active", item.dataset.page === pageName);
   });
@@ -25,5 +27,14 @@ export function bindNavigationEvents() {
     item.addEventListener("click", () => {
       showPage(item.dataset.page);
     });
+  });
+
+  dom.quickActions.forEach((item) => {
+    item.addEventListener("click", () => showPage(item.dataset.page));
+  });
+
+  dom.newTaskQuickAction?.addEventListener("click", () => {
+    showPage("home");
+    dom.taskAddButton?.click();
   });
 }

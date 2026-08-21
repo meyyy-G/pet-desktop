@@ -31,6 +31,7 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+!DesktopPet.spec
 
 # Installer logs
 pip-log.txt
@@ -205,11 +206,38 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-# Personal diary data
+# Personal application data
 data/diary/
+data/moods/
 
 # Local desktop-pet settings
 data/desktop_pet_settings.json
+data/pet_state.json
 
 # PyCharm local project files
 .idea/
+
+# Private original visual assets
+assets/animations/
+assets/raw_materials/
+assets/images/ui/
+src/desktop_pet/web/assets/
+
+# Only the README preview media below is public
+assets/images/*
+!assets/images/app-icon.png
+!assets/images/1.gif
+!assets/images/2.gif
+!assets/images/3.gif
+!assets/images/4.gif
+!assets/images/互动.gif
+!assets/images/hungry.gif
+!assets/images/sleepy.gif
+!assets/images/upset.gif
+!assets/images/angry.gif
+!assets/images/app_diary.png
+!assets/images/日记端盒子猫.gif
+!assets/images/看你打字.gif
+!assets/images/app_home.png
+!assets/images/app_calendar.png
+!assets/images/app_chat.png

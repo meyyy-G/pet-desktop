@@ -16,7 +16,28 @@ const months = [
 export function updateCurrentTime() {
   const today = new Date();
   dom.todayNumber.textContent = String(today.getDate());
-  dom.todayLabel.textContent = `${shortWeekdays[today.getDay()]}.${months[today.getMonth()]}`;
+  dom.todayLabel.textContent = `${shortWeekdays[today.getDay()]}·${months[today.getMonth()]}`;
+}
+
+/** 根据当前星期更新侧栏底部一周的过去、今天和未来状态。 */
+export function updateWeekStrip() {
+  // JavaScript 的星期从 Sunday=0 开始，界面则从 Monday=0 开始。
+  const todayIndex = (new Date().getDay() + 6) % 7;
+
+  dom.weekDays.forEach((day, index) => {
+    day.classList.remove("is-past", "is-today", "is-future");
+
+    if (index < todayIndex) {
+      day.classList.add("is-past");
+    } else if (index === todayIndex) {
+      day.classList.add("is-today");
+      day.setAttribute("aria-current", "date");
+    } else {
+      day.classList.add("is-future");
+    }
+
+    if (index !== todayIndex) day.removeAttribute("aria-current");
+  });
 }
 
 /** 更新首页顶部问候语。 */
@@ -24,6 +45,6 @@ export function updateHomeHeader() {
   const today = new Date();
   const period = getDayPeriod(today.getHours());
 
-  dom.homeGreeting.textContent = `good ${period},Mey.`;
+  dom.homeGreeting.textContent = `Good ${period},Mey.`;
   dom.homeDateLine.textContent = `${weekdays[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()} · A good day to check in with yourself.`;
 }

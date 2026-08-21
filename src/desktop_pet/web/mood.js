@@ -1,21 +1,25 @@
 import { dom } from "./dom.js";
 import { state } from "./state.js";
 import { isFutureDate, toDateText } from "./date-utils.js";
+import { moodColors } from "./mood-colors.js";
+import { renderCalendar } from "./calendar.js";
 
 // 心情模块：负责心情按钮、提示文字和首页迷你日历。
-const moodColors = {
-  Stress: "#b54ad8",
-  Low: "#7f7a7a",
-  Anxious: "#d17b42",
-  Steady: "#5f9569",
-  Light: "#d39b9a",
-  Inspired: "#4f7fc6",
-  Grateful: "#b58a2c",
-};
 const monthNames = [
   "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
   "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER",
 ];
+
+// Figma mini calendar 使用比全局 mood 色更浅的描边色。
+const miniMoodColors = Object.freeze({
+  Stress: "#b5b5b5",
+  Low: "#9ebef1",
+  Anxious: "#fcb3ad",
+  Steady: "#cff7d3",
+  Light: "#fee9e7",
+  Inspired: "#e7c6f2",
+  Grateful: "#ffe8a3",
+});
 
 function showMoodTooltip(button) {
   if (!dom.moodTooltip || !button.dataset.tooltip) return;
@@ -53,8 +57,8 @@ export function renderMiniCalendar() {
   if (!dom.miniCalendarTitle || !dom.miniCalendarGrid) return;
 
   const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const year = state.miniVisibleMonth.getFullYear();
+  const month = state.miniVisibleMonth.getMonth();
   const todayText = toDateText(today);
   if (state.selectedMiniDate && isFutureDate(state.selectedMiniDate)) {
     state.selectedMiniDate = todayText;
@@ -64,10 +68,15 @@ export function renderMiniCalendar() {
   dom.miniCalendarGrid.innerHTML = "";
   const startOffset = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const previousMonthDays = new Date(year, month, 0).getDate();
 
   for (let index = 0; index < startOffset; index += 1) {
     const emptyCell = document.createElement("span");
-    emptyCell.className = "mini-empty";
+    const shouldShowOutsideDate = index >= startOffset - 3;
+    emptyCell.className = shouldShowOutsideDate ? "mini-outside" : "mini-empty";
+    if (shouldShowOutsideDate) {
+      emptyCell.textContent = String(previousMonthDays - startOffset + index + 1);
+    }
     dom.miniCalendarGrid.appendChild(emptyCell);
   }
 
@@ -78,6 +87,7 @@ export function renderMiniCalendar() {
 
     if (isFutureDate(dateText)) {
       dayCell.classList.add("mini-future");
+      dayCell.disabled = true;
       dom.miniCalendarGrid.appendChild(dayCell);
       continue;
     }
@@ -88,15 +98,28 @@ export function renderMiniCalendar() {
     });
 
     const mood = state.recordedMoods[dateText];
-    if (dateText === state.selectedMiniDate) {
-      dayCell.classList.add("mini-selected");
-    } else if (mood && moodColors[mood]) {
-      dayCell.style.setProperty("--mood-color", moodColors[mood]);
+    if (mood && moodColors[mood]) {
+      dayCell.style.setProperty("--mood-color", miniMoodColors[mood] || moodColors[mood]);
       dayCell.classList.add(dateText === todayText ? "mood-today" : "mood-history");
-    } else if (dateText === todayText) {
+    }
+
+    if (dateText === todayText) {
       dayCell.classList.add("today");
+    } else if (dateText === state.selectedMiniDate) {
+      dayCell.classList.add("mini-selected");
     }
     dom.miniCalendarGrid.appendChild(dayCell);
+  }
+
+  const renderedCellCount = startOffset + daysInMonth;
+  const totalCellCount = 42;
+  for (let index = renderedCellCount; index < totalCellCount; index += 1) {
+    const outsideCell = document.createElement("span");
+    const outsideDay = index - renderedCellCount + 1;
+    const shouldShowOutsideDate = outsideDay <= 3;
+    outsideCell.className = shouldShowOutsideDate ? "mini-outside" : "mini-empty";
+    if (shouldShowOutsideDate) outsideCell.textContent = String(outsideDay);
+    dom.miniCalendarGrid.appendChild(outsideCell);
   }
 
   updateMoodButtonState();
@@ -107,11 +130,30 @@ export function loadRecordedMoods() {
   state.diaryBridge.getRecordedMoods((moods) => {
     state.recordedMoods = moods || {};
     renderMiniCalendar();
+    renderCalendar();
   });
 }
 
-/** 注册心情按钮的提示和保存事件。 */
+// 注册心情按钮的提示和保存事件。
 export function bindMoodEvents() {
+  dom.miniPrevMonthButton?.addEventListener("click", () => {
+    state.miniVisibleMonth = new Date(
+      state.miniVisibleMonth.getFullYear(),
+      state.miniVisibleMonth.getMonth() - 1,
+      1,
+    );
+    renderMiniCalendar();
+  });
+
+  dom.miniNextMonthButton?.addEventListener("click", () => {
+    state.miniVisibleMonth = new Date(
+      state.miniVisibleMonth.getFullYear(),
+      state.miniVisibleMonth.getMonth() + 1,
+      1,
+    );
+    renderMiniCalendar();
+  });
+
   dom.moodButtons.forEach((button) => {
     button.addEventListener("mouseenter", () => showMoodTooltip(button));
     button.addEventListener("mouseleave", hideMoodTooltip);
@@ -125,6 +167,7 @@ export function bindMoodEvents() {
       state.diaryBridge.saveMoodByDate(targetDateText, mood, () => {
         state.recordedMoods[targetDateText] = mood;
         renderMiniCalendar();
+        renderCalendar();
       });
     });
   });

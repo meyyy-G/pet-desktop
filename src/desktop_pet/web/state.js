@@ -11,6 +11,7 @@ export const state = {
   hasUnsavedChanges: false,
   currentDate: today,
   visibleMonth: new Date(today.getFullYear(), today.getMonth(), 1),
+  miniVisibleMonth: new Date(today.getFullYear(), today.getMonth(), 1),
   pendingDateText: null,
   recordedDates: new Set(),
   recordedMoods: {},
