@@ -84,7 +84,7 @@
 
 ### 🐱也会陪着你记录
 <p align="center">
-  <img src="assets/images/看你打字.gif" width="260" alt="Cat watching user type">
+  <img src="assets/images/看你打字.gif" width="900" alt="Cat watching user type">
 </p>
 
 ---
