@@ -6,6 +6,12 @@
 
 <p align="center">A cozy pixel-art desktop companion combining a virtual pet, journal, mood tracker, calendar and daily tasks.</p>
 
+<p align="center">
+  <a href="https://github.com/meyyy-G/pet-desktop/releases/download/v0.1.0/DesktopPet-v0.1.0-windows-x64.exe"><strong>⬇️ 下载 Windows 版本（v0.1.0）</strong></a>
+</p>
+
+<p align="center">无需安装 Python，下载后双击即可运行。首次启动可能需要等待几秒。</p>
+
 ---
 
 ## 🌟 项目介绍
@@ -30,6 +36,8 @@
 
 `assets/images/` 中公开的图片仅用于项目介绍和效果预览。由于缺少私有原始素材，公开源码不能直接还原完整桌宠动画和日记界面。
 
+需要直接使用完整应用的用户，请下载上方 GitHub Release 中已经打包好的 Windows 版本；发布包包含程序运行所需资源。
+
 ---
 
 ## ✨ 主要功能
@@ -49,7 +57,6 @@
 <p align="center">
   <img src="assets/images/1.gif" width="170" alt="Desktop pet animation 1">
   <img src="assets/images/2.gif" width="170" alt="Desktop pet animation 2">
-  <img src="assets/images/3.gif" width="170" alt="Desktop pet animation 3">
   <img src="assets/images/4.gif" width="170" alt="Desktop pet animation 4">
 </p>
 
@@ -59,7 +66,7 @@
 
 可以拖动小猫，也可以通过右键菜单进行喂食、玩耍和睡觉等互动。
 
-<p align="center"><img src="assets/images/互动.gif" width="360" alt="Pet interaction"></p>
+<p align="center"><img src="assets/images/互动.gif" width="170" alt="Pet interaction"></p>
 
 ---
 
@@ -213,10 +220,10 @@ python -m pip install -r requirements-dev.txt
 构建完成后，程序位于：
 
 ```text
-dist\DesktopPet\DesktopPet.exe
+dist\DesktopPet.exe
 ```
 
-> PyInstaller 使用 `onedir` 模式。发布或移动程序时，需要保留整个 `DesktopPet` 文件夹，不能只复制其中的 EXE。
+> PyInstaller 使用 `onefile` 模式，构建完成后会生成单个 `DesktopPet.exe`。
 >
 > 构建过程需要未公开的完整视觉素材；仅克隆公开仓库无法生成完整版本。
 

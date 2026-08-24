@@ -22,5 +22,5 @@ echo Building DesktopPet...
 if errorlevel 1 exit /b 1
 
 echo.
-echo Build complete: dist\DesktopPet\DesktopPet.exe
+echo Build complete: dist\DesktopPet.exe
 endlocal
