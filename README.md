@@ -52,14 +52,30 @@ Desktop Journal Companion 是面向 Windows 的桌面陪伴应用。程序由 Py
 <p align="center"><img src="assets/images/app_chat.png" width="900" alt="Chat 页面演示"></p>
 <p align="center"><img src="assets/images/app_task.png" width="900" alt="Task 页面视觉预览"></p>
 
+## 桌宠动作预览
+
+### 自然动作
+
+没有互动时，小猫会从站立张望逐渐切换到坐下、打哈欠和躺下。下面的 GIF 展示这些日常姿态；具体切换还会受到当前需求状态影响。
+
 <p align="center">
-  <img src="assets/images/1.gif" width="130" alt="桌宠动作演示 1">
-  <img src="assets/images/2.gif" width="130" alt="桌宠动作演示 2">
-  <img src="assets/images/3.gif" width="130" alt="桌宠动作演示 3">
-  <img src="assets/images/4.gif" width="130" alt="桌宠动作演示 4">
+  <img src="assets/images/1.gif" width="130" alt="小猫站立张望">
+  <img src="assets/images/2.gif" width="130" alt="小猫坐下">
+  <img src="assets/images/4.gif" width="130" alt="小猫打哈欠">
+  <img src="assets/images/3.gif" width="130" alt="小猫躺下">
 </p>
+<p align="center"><em>站立张望 · 坐下 · 打哈欠 · 躺下</em></p>
+
+### 日常互动
+
+单击可以抚摸小猫，拖动时会有搬运和落地动作；右键菜单可选择喂食、玩耍或睡觉。
 
 <p align="center"><img src="assets/images/互动.gif" width="170" alt="桌宠互动演示"></p>
+
+### 需求与心情提示
+
+饱食度、心情值或精力值降低时，小猫会显示对应提示，并可能切换到难过、困倦、生气、哭泣或生病等动作。
+
 <p align="center">
   <img src="assets/images/hungry.gif" width="130" alt="饥饿提示演示">
   <img src="assets/images/sleepy.gif" width="130" alt="困倦提示演示">
@@ -67,8 +83,18 @@ Desktop Journal Companion 是面向 Windows 的桌面陪伴应用。程序由 Py
   <img src="assets/images/angry.gif" width="130" alt="生气提示演示">
   <img src="assets/images/cry.gif" width="130" alt="哭泣提示演示">
   <img src="assets/images/sick.gif" width="130" alt="生病提示演示">
-  <img src="assets/images/heal.gif" width="130" alt="治疗动画演示">
 </p>
+
+### 生病与治疗
+
+小猫生病后，普通互动会暂时受限。通过右键菜单开始治疗，治疗期间会播放单独的动画与提示。
+
+<p align="center"><img src="assets/images/heal.gif" width="170" alt="小猫治疗动画演示"></p>
+
+### 写日记时的陪伴
+
+打开手帐后，小猫会切换到陪伴姿态；在 Diary 页面输入内容时，会出现跟随写日记的专属动作。
+
 <p align="center"><img src="assets/images/日记端盒子猫.gif" width="250" alt="手帐陪伴动作演示"></p>
 <p align="center"><img src="assets/images/看你打字.gif" width="700" alt="小猫陪伴写日记演示"></p>
 
