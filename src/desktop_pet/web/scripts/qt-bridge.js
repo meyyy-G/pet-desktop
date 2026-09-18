@@ -6,6 +6,7 @@
  * @param {(bridge: object) => void} onConnected 连接成功后的回调。
  */
 export function connectDiaryBridge(onConnected) {
+  if (typeof QWebChannel === "undefined" || typeof qt === "undefined") return;
   new QWebChannel(qt.webChannelTransport, (channel) => {
     onConnected(channel.objects.diaryBridge);
   });

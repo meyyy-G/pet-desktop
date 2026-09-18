@@ -3,7 +3,6 @@ from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ..paths import ASSETS_DIR
-from .need_rules import highest_need_severity
 
 
 class ImageProgressBar(QWidget):
@@ -22,7 +21,7 @@ class ImageProgressBar(QWidget):
         self._title = title
         self.setFixedSize(self.WIDTH, self.HEIGHT)
 
-        image_dir = ASSETS_DIR / "images" / "ui"
+        image_dir = ASSETS_DIR / "animations" / "cat_panel"
         self._background = self._load_scaled(
             image_dir / "bar.png",
             self.WIDTH,
@@ -180,6 +179,10 @@ class PetNeedIndicator(QLabel):
     PET_OVERLAP = 12
     PET_X_OFFSET = -5
     DISPLAY_MS = 10_000
+    TRANSIENT_DISPLAY_MS = {
+        "hungry": 30_000,
+        "sleep": 30_000,
+    }
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -190,6 +193,7 @@ class PetNeedIndicator(QLabel):
         self._values: tuple[int, int, int] | None = None
         self._current_hint: str | None = None
         self._is_persistent = False
+        self._care_hint: str | None = None
         self._pixmaps = self._load_pixmaps()
 
         self.hide_timer = QTimer(self)
@@ -210,18 +214,19 @@ class PetNeedIndicator(QLabel):
         satiety: int,
         mood: int,
         energy: int,
-        previous_satiety: int | None = None,
     ) -> None:
-        """设置启动值，并允许离线 Satiety 结算触发一次跨阈值提示。"""
-        if previous_satiety is None:
-            previous_satiety = satiety
-        self._values = (previous_satiety, mood, energy)
+        """使用当前存档值初始化需求提示状态。"""
+        self._values = (satiety, mood, energy)
         self.update_values(satiety, mood, energy)
 
     def update_values(self, satiety: int, mood: int, energy: int) -> None:
         new_values = (satiety, mood, energy)
         old_values = self._values
         self._values = new_values
+
+        if self._care_hint is not None:
+            self._show_hint(self._care_hint, persistent=True)
+            return
 
         persistent_hint = self._persistent_hint(*new_values)
         if persistent_hint is not None:
@@ -239,13 +244,26 @@ class PetNeedIndicator(QLabel):
         if self._is_persistent:
             self._clear_hint()
 
+    def set_care_hint(self, hint: str | None) -> None:
+        """高优先级生病/治疗提示；设置后不被普通 Need 提示覆盖。"""
+        self._care_hint = hint
+        if hint is not None:
+            self._show_hint(hint, persistent=True)
+        elif self._values is not None:
+            self.update_values(*self._values)
+
+    def show_care_hint(self) -> None:
+        """锁定期间点击小猫时，只重新显示当前状态提示。"""
+        if self._care_hint is not None:
+            self._show_hint(self._care_hint, persistent=True)
+
     @staticmethod
     def _persistent_hint(
         satiety: int,
         mood: int,
         energy: int,
     ) -> str | None:
-        if highest_need_severity(satiety, mood, energy) == 15:
+        if satiety <= 15 or mood <= 15:
             return "sick"
         if satiety <= 25 and mood <= 25 and energy <= 25:
             return "upset"
@@ -292,7 +310,9 @@ class PetNeedIndicator(QLabel):
         if persistent:
             self.hide_timer.stop()
         else:
-            self.hide_timer.start(self.DISPLAY_MS)
+            self.hide_timer.start(
+                self.TRANSIENT_DISPLAY_MS.get(hint, self.DISPLAY_MS)
+            )
 
     def _finish_transient(self) -> None:
         if self._values is None:
@@ -316,9 +336,16 @@ class PetNeedIndicator(QLabel):
             self.visibility_changed.emit(False)
 
     def _load_pixmaps(self) -> dict[str, QPixmap]:
-        panel_dir = ASSETS_DIR / "animations" / "cat_panel"
+        panel_dir = ASSETS_DIR / "animations" / "cat_thought"
         pixmaps = {}
-        for hint in ("hungry", "angry", "sleep", "upset", "sick"):
+        for hint in (
+            "hungry",
+            "angry",
+            "sleep",
+            "upset",
+            "sick",
+            "treating",
+        ):
             pixmap = QPixmap(str(panel_dir / f"{hint}.png"))
             if not pixmap.isNull():
                 pixmap = pixmap.scaled(

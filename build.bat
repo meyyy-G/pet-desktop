@@ -4,6 +4,10 @@ cd /d "%~dp0"
 
 set "PYTHON_EXE=.venv\Scripts\python.exe"
 
+rem Keep unrelated tools on the caller's PATH out of PyInstaller's DLL search.
+rem In particular, external ICU/UCRT copies can make the frozen Qt app fail.
+set "PATH=%CD%\.venv\Scripts;%SystemRoot%\System32;%SystemRoot%;%SystemRoot%\System32\Wbem"
+
 if not exist "%PYTHON_EXE%" (
     echo [ERROR] Virtual environment not found: .venv
     echo Create it with: python -m venv .venv

@@ -1,0 +1,24 @@
+.right-sidebar { grid-column: 3; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; width: var(--right-width); height: 100%; min-height: 0; padding: 32px 24px; background: var(--nav-background); overflow-y: auto; }
+.right-sidebar > * { flex-shrink: 0; }
+.right-sidebar hr { flex: 0 0 1px; width: 100%; height: 1px; margin: 0; background: #eee; border: 0; }
+.summary-block { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; }
+.summary-block h2 { margin: 0; color: #7a7a7a; font: 700 11px/normal "Geom", sans-serif; letter-spacing: .55px; }
+.summary-block p { margin: 0; color: var(--text-secondary); font: 400 11px/normal "Inter", sans-serif; }
+.snapshot-mood { display: flex; align-items: center; gap: 8px; }
+.snapshot-icon { display: block; flex: 0 0 24px; width: 24px; height: 24px; background: var(--display-mood-color); mask: var(--mood-icon) center/contain no-repeat; -webkit-mask: var(--mood-icon) center/contain no-repeat; }
+.snapshot-icon[hidden] { display: none; }
+.snapshot-mood strong { font: 500 16px/normal "Inter", sans-serif; }
+.snapshot-block > p { font-size: 12px; }
+.focus-line { display: flex; align-items: center; gap: 12px; }
+.focus-line strong { font: 600 20px/normal "Inter", sans-serif; }
+.focus-line button, .focus-line img { width: 40px; height: 40px; padding: 0; background: transparent; }
+.summary-track { width: 100%; overflow: hidden; background: #eee; border-radius: 999px; }
+.summary-track span { display: block; border-radius: inherit; }
+.focus-track { height: 8px; background: #d9d9d9; }.focus-track span { width: 100px; height: 8px; background: #9ebef1; }
+.progress-line { display: flex; align-items: center; justify-content: space-between; width: 100%; }.progress-line strong { font: 700 16px/normal "Inter", sans-serif; }.progress-line span { color: #2e7d32; font: 400 13px/normal "Inter", sans-serif; }
+.progress-track { height: 5px; }.progress-track span { width: 25%; height: 5px; background: #7a7a7a; }
+.due-heading { display: flex; align-items: center; gap: 8px; }.due-heading img { width: 16px; height: 16px; }.due-heading strong { font: 800 12px/normal "Inter", sans-serif; }
+.summary-block .due-item { display: flex; align-items: center; gap: 6px; margin-left: 0; font-size: 12px; }
+.summary-block .due-item + .due-item { margin-top: -6px; }
+.summary-block .due-item .tag-dot { width: 8px; height: 8px; }
+.observation { gap: 8px; }.observation > div { width: 100%; padding: 12px; background: #f9f9f8; border-radius: 8px; }.observation p { color: #555; font-size: 12px; line-height: 18px; }.observation strong { color: var(--text-primary); font-weight: 700; }

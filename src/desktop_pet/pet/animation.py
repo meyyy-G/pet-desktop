@@ -10,6 +10,14 @@ class PetAnimation(QObject):
     frame_changed = Signal(QPixmap)
     state_finished = Signal(str)
 
+    ONE_SHOT_STATES = {
+        "gaping",
+        "diary_open_enter",
+        "diary_open_exit",
+        "diary_typing_enter",
+        "diary_typing_exit",
+    }
+
     FRAME_PATTERN = {
         "idle": ("standy_rect/looking", "looking_", 6),
         "sitting": ("standy_rect/idle", "sitting_", 10),
@@ -20,13 +28,17 @@ class PetAnimation(QObject):
         "sleeping": ("interactive_rect/sleep", "sleeping_", 4),
         "touch": ("interactive_rect/touch", "tch_rect_", 12),
         "carry": ("interactive_rect/carry", "carry_cat_", 12),
-        "upset": ("need_rect/upset", "upset_", 3),
+        "upset": ("need_rect/upset", "upset_", 5),
         "angry": ("need_rect/angry", "angry_", 9),
-        "die": ("need_rect/die", "die_", 5),
         "sleepy": ("need_rect/sleepy", "slpy_cat_", 9),
         "sleep": ("need_rect/sleep", "sleeping_", 4),
         "cry": ("need_rect/cry", "cry_", 4),
         "sick": ("need_rect/sick", "sick_", 4),
+        "treating": ("need_rect/Treating", "treating_", 5),
+    }
+
+    STATIC_FRAMES = {
+        "die": "need_rect/die/DeadCat.png",
     }
 
     STATE_INTERVALS = {
@@ -40,13 +52,15 @@ class PetAnimation(QObject):
         "sleeping": 180,
         "touch": 140,
         "carry": 140,
-        "upset": 140,
-        "angry": 140,
-        "die": 140,
-        "sleepy": 180,
-        "sleep": 180,
-        "cry": 180,
-        "sick": 180,
+        "upset": 240,
+        "angry": 240,
+        "die": 240,
+        "sleepy": 240,
+        "sleep": 240,
+        "cry": 240,
+        "sick": 240,
+        # 治疗动画单独放慢，不影响其他状态的播放速度。
+        "treating": 450,
 
         "diary_open_enter": 150,
         "diary_open_exit": 150,
@@ -101,13 +115,7 @@ class PetAnimation(QObject):
 
         self.frame_changed.emit(frames[self.frame_index])
 
-        if self.state in (
-            "gaping",
-            "diary_open_enter",
-            "diary_open_exit",
-            "diary_typing_enter",
-            "diary_typing_exit",
-        ):
+        if self.state in self.ONE_SHOT_STATES:
             if self.frame_index < len(frames) - 1:
                 self.frame_index += 1
             else:
@@ -128,6 +136,15 @@ class PetAnimation(QObject):
                 folder_path,
                 prefix,
                 count,
+            )
+
+        cat_folder = ASSETS_DIR / "animations" / "cat"
+        for state, relative_path in self.STATIC_FRAMES.items():
+            image_path = cat_folder / relative_path
+            frames_by_state[state] = (
+                [self._scaled_pixmap(image_path)]
+                if image_path.exists()
+                else []
             )
 
         type_folder = ASSETS_DIR / "animations" / "cat" / "type"

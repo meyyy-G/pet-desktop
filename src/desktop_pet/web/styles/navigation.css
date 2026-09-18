@@ -1,0 +1,42 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: var(--nav-width);
+  height: 100%;
+  padding: 22px 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  gap: 24px;
+  background: var(--nav-background);
+  border-right: 1px solid #efefef;
+}
+.sidebar-top { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.brand { display: flex; align-items: center; gap: 12px; height: 40px; }
+.brand-mark { width: 40px; height: 40px; }
+.brand-mark img { width: 40px; height: 40px; object-fit: contain; }
+.brand-name { font: 400 28px/28px "Jost", sans-serif; }
+.current-time { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; width: 100%; padding: 0 22px; }
+.current-time strong { font: 400 28px/38px "Reggae One", serif; }
+.current-time span { color: #736b66; font: 300 15px/18px "Alan Sans", sans-serif; }
+.nav-list { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; width: 100%; padding: 0 10px; }
+.nav-item { display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 6px 12px; background: transparent; border: 1px solid transparent; border-radius: 15px; color: #59544f; font: 500 17px/20px "Geom", sans-serif; text-align: left; }
+.nav-item img { width: 25px; height: 25px; object-fit: contain; }
+.nav-item.active { color: var(--text-primary); background: var(--selected); border-color: var(--selected); }
+.nav-item-disabled { opacity: 1; cursor: default; }
+.week-strip { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+.week-divider { width: 175px; height: 1px; background: #ddd8d4; }
+.week-strip p { width: 100%; margin: 0; padding: 2px 12px 0; color: #7a7a7a; font: 600 11px/normal "Geom", sans-serif; letter-spacing: .55px; }
+.week-days { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0 10px; }
+.week-days span { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; color: var(--text-primary); background: #f1eeea; font: 500 10px/1 "Geom", sans-serif; }
+.week-days .is-past { background: #b5b5b5; }
+.week-days .is-today { background: transparent; }
+
+.sidebar-top, .week-strip { flex-shrink: 0; }
+@media (max-width: 999px) {
+  .brand-name, .current-time, .week-strip { display: none; }
+  .sidebar-top { gap: 24px; }
+  .nav-item { justify-content: center; height: 44px; padding: 8px; }
+  /* Visually hide labels while preserving each button's accessible name. */
+  .nav-item > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}

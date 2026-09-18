@@ -24,6 +24,7 @@ export function showPage(pageName) {
 /** 注册一次导航点击事件，由入口 app.js 调用。 */
 export function bindNavigationEvents() {
   dom.navItems.forEach((item) => {
+    item.title = item.textContent.trim();
     item.addEventListener("click", () => {
       showPage(item.dataset.page);
     });

@@ -2,10 +2,10 @@
 // 其他模块通过 dom.xxx 使用元素，不需要到处重复 querySelector。
 
 export const dom = {
-  app: document.querySelector(".app-v2"),
+  app: document.querySelector(".app-shell"),
   navItems: document.querySelectorAll(".nav-item"),
-  quickActions: document.querySelectorAll(".v2-quick-action[data-page]"),
-  newTaskQuickAction: document.querySelector('.v2-quick-action[data-action="new-task"]'),
+  quickActions: document.querySelectorAll(".summary-quick-action[data-page]"),
+  newTaskQuickAction: document.querySelector('.summary-quick-action[data-action="new-task"]'),
   pages: document.querySelectorAll(".page"),
 
   diaryTitle: document.querySelector("#diary-title"),
@@ -18,6 +18,7 @@ export const dom = {
   diaryRecentCards: document.querySelectorAll(".diary-recent-card"),
   diaryToolbarButtons: document.querySelectorAll("[data-editor-command]"),
   diaryExpandButton: document.querySelector(".diary-expand-button"),
+  diaryWritingArea: document.querySelector(".diary-writing-area"),
   previousEntryButton: document.querySelector("#previous-entry-button"),
 
   chatMessageList: document.querySelector("#chat-message-list"),
@@ -45,10 +46,20 @@ export const dom = {
   rightTaskList: document.querySelector("#right-task-list"),
   homeGreeting: document.querySelector("#home-greeting"),
   homeDateLine: document.querySelector("#home-date-line"),
+  homeMoodTitle: document.querySelector("#mood-title"),
+  homeMoodIcon: document.querySelector("#home-mood-icon"),
+  homeMoodName: document.querySelector("#home-mood-name"),
+  homeMoodDetail: document.querySelector("#home-mood-detail"),
   miniCalendarTitle: document.querySelector("#mini-calendar-title"),
   miniCalendarGrid: document.querySelector("#mini-calendar-grid"),
   miniPrevMonthButton: document.querySelector("#mini-prev-month-button"),
   miniNextMonthButton: document.querySelector("#mini-next-month-button"),
+  diaryMoodPill: document.querySelector("#diary-mood-pill"),
+  diaryMoodText: document.querySelector("#diary-mood-text"),
+  diaryMoodLabel: document.querySelector("#diary-mood-label"),
+  snapshotMoodDot: document.querySelector("#snapshot-mood-dot"),
+  snapshotMoodName: document.querySelector("#snapshot-mood-name"),
+  snapshotMoodDetail: document.querySelector("#snapshot-mood-detail"),
 
   unsavedModal: document.querySelector("#unsaved-modal"),
   modalSaveButton: document.querySelector("#modal-save-button"),

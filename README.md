@@ -1,333 +1,162 @@
 # 🐾 Desktop Journal Companion
 
-<p align="center"><img src="assets/images/app-icon.png" width="128" alt="Desktop Journal Companion"></p>
+<p align="center"><img src="assets/images/app-icon.png" width="112" alt="Desktop Journal Companion 图标"></p>
 
-<p align="center">一只会陪你写日记、记录心情，也需要你照顾的像素桌面小猫。</p>
+<p align="center">一只可以互动的像素桌面小猫，和一间记录日记、心情与日常任务的手帐小屋。</p>
 
-<p align="center">A cozy pixel-art desktop companion combining a virtual pet, journal, mood tracker, calendar and daily tasks.</p>
+<p align="center"><a href="https://github.com/meyyy-G/pet-desktop/releases"><strong>⬇️ 前往 Releases 下载 Windows 版本</strong></a></p>
 
-<p align="center">
-  <a href="https://github.com/meyyy-G/pet-desktop/releases/download/v0.1.0/DesktopPet-v0.1.0-windows-x64.exe"><strong>⬇️ 下载 Windows 版本（v0.1.0）</strong></a>
-</p>
+> 项目仍在开发中。Release 中的已发布版本可能落后于仓库当前源码；下载前请查看对应版本的说明。
 
-<p align="center">无需安装 Python，下载后双击即可运行。首次启动可能需要等待几秒。</p>
+## 项目介绍
 
----
+Desktop Journal Companion 是面向 Windows 的桌面陪伴应用。程序由 Python / PySide6 驱动：桌宠使用透明 Qt 窗口，手帐使用 Qt WebEngine 展示 HTML、CSS 和 JavaScript 页面，并通过 QWebChannel 与本地数据读写层通信。
 
-## 🌟 项目介绍
+小猫会根据无互动时长、需求值和你的操作切换动作。双击桌宠可打开手帐，记录日记与心情；Home 页面还提供轻量的任务清单。
 
-**Desktop Journal Companion** 是一个使用 **Python 和 PySide6** 开发的 Windows 桌面陪伴应用。
+## 目前能做什么
 
-它将像素桌宠与个人日记系统结合在一起。小猫会停留在桌面上，根据时间、互动行为和自身状态播放不同动画。你可以拖动、抚摸、喂食、陪它玩耍或让它睡觉，也可以打开手帐页面记录日记、心情和每日任务。
+| 区域 | 当前实现 |
+| --- | --- |
+| 桌宠 | 透明无边框窗口、拖动与落地动画、单击抚摸、双击打开手帐、右键喂食／玩耍／睡觉／治疗／置顶／退出、系统托盘入口。 |
+| Home | 当天问候与日期、七种心情选择、当月迷你日历、可增删改和勾选的任务清单。 |
+| Diary | 按日期读取和保存日记、字数显示、文本快捷标记、编辑区展开、未保存内容确认。 |
+| Calendar | 月历翻页、回到今天、查看有日记或心情记录的日期、点击日期打开日记。 |
+| Chat | 消息输入与固定的演示回复；**尚未接入 AI API**，消息没有持久化。 |
+| Task / Focus | 独立 Task 页是视觉预览，未与 Home 任务清单联动；Focus 导航不可用，计时和右侧部分统计为展示内容。 |
 
-项目希望在日常工作和学习过程中，提供一个轻松、安静、有陪伴感的桌面空间。
+### 桌宠行为与状态
 
-> 当前项目仍在持续开发中，部分页面和功能尚未完成。
+- 自然动作由状态机管理：无互动约 10 分钟坐下、约 20 分钟打哈欠、约 30 分钟躺下；互动动作及需求动作可暂时覆盖自然动作。
+- 饱食度、心情值、精力值在**程序运行期间**按各自间隔下降；关闭期间不继续扣减。数值变化会保存到本地。
+- 喂食提升饱食度；玩耍提升心情，但需要足够的饱食度和精力；睡觉补充精力；单击抚摸提升心情。操作后会短暂显示状态面板。
+- 需求值降低时，小猫会出现难过、困倦、哭泣、生气或生病等对应动画与提示。生病时普通互动受限，可从右键菜单开始治疗。
+- 拖动桌宠会触发搬运与落地动作；打开手帐及在 Diary 页输入时，也有相应的陪伴动画。
+- 桌宠位置和置顶选项会保存；启动时会尽量把窗口调整回可见屏幕内。
 
-### 📦 公开范围与素材说明
+### 手帐与数据
 
-本仓库公开程序源代码，以及 README 展示所需的截图和演示 GIF。
+- 日记按日期保存为本地 JSON。输入时不会自动保存；切换日期或关闭手帐时，如有未保存修改，会提示保存、放弃或取消。当前页面的独立 Save 按钮被隐藏，界面中的 “Auto saved” 文案也不代表输入即自动保存。
+- Home 可选择当月日期并记录心情；记录会显示在 Home、Diary 和 Calendar 中。日记与心情是两套独立数据。
+- Home 任务清单支持添加、修改、完成和删除，数据保存在 Qt WebEngine 的 `localStorage` 中，**不是**日记目录中的 JSON，也未与独立 Task 页同步。
+- Diary 的“Recent Entries”卡片目前是演示摘要，点击会跳转到相应日期，但摘要文字和字数并非从真实日记生成。
+- 右侧摘要的心情与任务完成比例会跟随记录更新；Focus 时长、趋势描述、Due Next 等内容目前仍是静态展示。
 
-为了保护原创美术内容，以下资源不包含在公开仓库中：
+## 界面预览
 
-- 桌宠动画原始帧与工程素材
-- 日记界面的原始 UI 图片和图标素材
-- 可直接用于重新制作完整视觉效果的源文件
+以下截图展示当前五个页面。Task 页目前仍是视觉预览，截图中的任务和筛选控件尚未与 Home 任务清单联动；Chat 页也尚未连接 AI 服务。
 
-`assets/images/` 中公开的图片仅用于项目介绍和效果预览。由于缺少私有原始素材，公开源码不能直接还原完整桌宠动画和日记界面。
-
-需要直接使用完整应用的用户，请下载上方 GitHub Release 中已经打包好的 Windows 版本；发布包包含程序运行所需资源。
-
----
-
-## ✨ 主要功能
-
-### 🐱 像素桌面宠物
-
-- 透明无边框桌面窗口
-- 支持窗口置顶
-- 支持鼠标拖动和物理落地效果
-- 双击小猫打开手帐
-- 自动保存桌宠位置
-- 自动修正超出屏幕范围的窗口位置
-- 根据空闲时间自然切换动作
-- Looking、Sitting、Gaping、Laydown 等待机状态
-- 支持喂食、玩耍、睡觉和抚摸互动
+<p align="center"><img src="assets/images/app_home.png" width="900" alt="Home 页面演示"></p>
+<p align="center"><img src="assets/images/app_diary.png" width="900" alt="Diary 页面演示"></p>
+<p align="center"><img src="assets/images/app_calendar.png" width="900" alt="Calendar 页面演示"></p>
+<p align="center"><img src="assets/images/app_chat.png" width="900" alt="Chat 页面演示"></p>
+<p align="center"><img src="assets/images/app_task.png" width="900" alt="Task 页面视觉预览"></p>
 
 <p align="center">
-  <img src="assets/images/1.gif" width="170" alt="Desktop pet animation 1">
-  <img src="assets/images/2.gif" width="170" alt="Desktop pet animation 2">
-  <img src="assets/images/4.gif" width="170" alt="Desktop pet animation 4">
+  <img src="assets/images/1.gif" width="130" alt="桌宠动作演示 1">
+  <img src="assets/images/2.gif" width="130" alt="桌宠动作演示 2">
+  <img src="assets/images/3.gif" width="130" alt="桌宠动作演示 3">
+  <img src="assets/images/4.gif" width="130" alt="桌宠动作演示 4">
 </p>
 
-<p align="center"><em>小猫会在桌面上自然切换不同动画状态。</em></p>
-
-### 🤍 桌宠互动
-
-可以拖动小猫，也可以通过右键菜单进行喂食、玩耍和睡觉等互动。
-
-<p align="center"><img src="assets/images/互动.gif" width="170" alt="Pet interaction"></p>
-
----
-
-### 🍞 状态与需求系统
-
-小猫拥有三项会随时间变化的状态：
-
-- 饱食度
-- 心情值
-- 精力值
-
-状态会保存在本地，并在关闭程序后继续进行离线时间结算。当状态较低时，小猫会通过不同动画表达饥饿、困倦、难过或生气等需求。
-
+<p align="center"><img src="assets/images/互动.gif" width="170" alt="桌宠互动演示"></p>
 <p align="center">
-  <img src="assets/images/hungry.gif" width="150" alt="Hungry">
-  <img src="assets/images/sleepy.gif" width="150" alt="Sleepy">
-  <img src="assets/images/upset.gif" width="150" alt="Upset">
-  <img src="assets/images/angry.gif" width="150" alt="Angry">
+  <img src="assets/images/hungry.gif" width="130" alt="饥饿提示演示">
+  <img src="assets/images/sleepy.gif" width="130" alt="困倦提示演示">
+  <img src="assets/images/upset.gif" width="130" alt="难过提示演示">
+  <img src="assets/images/angry.gif" width="130" alt="生气提示演示">
+  <img src="assets/images/cry.gif" width="130" alt="哭泣提示演示">
+  <img src="assets/images/sick.gif" width="130" alt="生病提示演示">
+  <img src="assets/images/heal.gif" width="130" alt="治疗动画演示">
 </p>
+<p align="center"><img src="assets/images/日记端盒子猫.gif" width="250" alt="手帐陪伴动作演示"></p>
+<p align="center"><img src="assets/images/看你打字.gif" width="700" alt="小猫陪伴写日记演示"></p>
 
----
+## 下载与运行
 
-### 🐱也会陪着你记录
-<p align="center">
-  <img src="assets/images/看你打字.gif" width="900" alt="Cat watching user type">
-</p>
+在 [GitHub Releases](https://github.com/meyyy-G/pet-desktop/releases) 选择一个版本，下载其中的 Windows `DesktopPet*.exe`。已打包的单文件程序无需另装 Python；首次启动可能因解包而稍慢。当前主要面向 64 位 Windows 10/11，未提供其他平台的构建与验证。
 
----
+启动后，小猫会出现在桌面上。单击抚摸，双击打开手帐，右键查看互动菜单；也可以通过系统托盘打开手帐或退出。
 
-### 📖 日记系统
+> 发布包包含运行所需的私有视觉资源。请不要把 `dist/` 中的 EXE 当作可公开素材的源码替代品。
 
-- 按日期创建和查看日记
-- 日记内容本地保存
-- 支持保存、放弃修改
-- 日历日期导航
-- 已记录日期高亮
-- 输入日记时触发专属桌宠动画
+## 从源码运行
 
----
-
-### 😊 心情记录
-
-- 记录每天的心情
-- 心情数据本地持久化
-- 在主页和日历中查看心情
-- 使用不同颜色展示每日心情
-
-<p align="center"><img src="assets/images/app_home.png" width="900" alt="Application home page"></p>
-
----
-
-### 📅 日历
-
-- 月历视图
-- 上个月和下个月切换
-- 快速跳转到指定日期
-- 显示日记记录日期
-- 显示每日心情颜色
-
-<p align="center"><img src="assets/images/app_calendar.png" width="900" alt="Calendar page"></p>
-
----
-
-### ✅ 每日任务
-
-- 添加任务
-- 编辑任务内容
-- 标记任务完成
-- 删除任务
-- 显示任务完成进度
-- 使用浏览器本地存储保存任务
-
-> 当前任务系统仍在完善中。
-
----
-
-### 💬 AI Companion
-
-Chat 页面已经完成界面和基础消息交互。
-
-<p align="center"><img src="assets/images/app_chat.png" width="900" alt="Chat page"></p>
-
-> 当前版本尚未连接 AI API，聊天回复为界面演示内容。
-> OpenAI、DeepSeek、Gemini、Claude 等模型均未接入。
-
----
-
-## 🖥️ 系统要求
-
-目前主要面向：
-
-- Windows 10 / Windows 11
-- Python 3.13（运行源码时需要）
-- 64 位操作系统
-
----
-
-## 🚀 运行源码
-
-### 1. 克隆项目
+本仓库公开应用代码和 README 预览图，**不公开完整动画帧、Web UI 图片／SVG／字体和其他原创视觉素材**。因此只克隆公开仓库并安装依赖，不能还原完整界面，也可能因缺少素材而无法正常运行或打包。下面的步骤适用于已具备完整本地资源的开发环境。
 
 ```powershell
 git clone https://github.com/meyyy-G/pet-desktop.git
 cd pet-desktop
+py -3.13 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\run_app.bat
 ```
 
-### 2. 创建虚拟环境
+也可以执行 `.venv\Scripts\python.exe src\desktop_pet_app.py`。运行依赖见 `requirements.txt`；目前使用 Python 3.13 开发和构建。
 
-```powershell
-python -m venv .venv
+完整本地资源的主要位置：
+
+```text
+assets/
+├── animations/      # 桌宠动作、状态面板与提示图
+├── images/          # 应用图标与 README 演示图
+└── web/
+    ├── font/        # Web 字体
+    └── svg/         # Web UI 图标与插画
 ```
 
-### 3. 激活虚拟环境
+其中 `animations/`、`web/` 及部分 `images/` 文件由 `.gitignore` 排除，不应直接提交到公开仓库。
+
+## 本地打包
+
+在具有完整私有资源的 Windows 开发环境中：
 
 ```powershell
-.venv\Scripts\activate
-```
-
-### 4. 安装依赖
-
-```powershell
-python -m pip install -r requirements.txt
-```
-
-### 5. 启动程序
-
-> 公开仓库不包含完整美术素材。启动源码前，需要自行准备对应资源；否则部分桌宠动画和日记 UI 图标无法显示。
-
-可以双击 `run_app.bat`，或者执行：
-
-```powershell
-python src\desktop_pet_app.py
-```
-
----
-
-## 📦 本地构建 Windows 程序
-
-安装开发和打包依赖：
-
-```powershell
-python -m pip install -r requirements-dev.txt
-```
-
-运行构建脚本：
-
-```powershell
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .\build.bat
 ```
 
-构建完成后，程序位于：
+`DesktopPet.spec` 使用 PyInstaller 的 onefile 模式，包含应用代码及运行所需资源，并排除未使用的部分 Qt 模块和调试资源。产物为 `dist\DesktopPet.exe`。`build/` 和 `dist/` 是本地生成目录，不纳入 Git；面向用户的 EXE 应作为 GitHub Release 附件单独上传。
 
-```text
-dist\DesktopPet.exe
-```
-
-> PyInstaller 使用 `onefile` 模式，构建完成后会生成单个 `DesktopPet.exe`。
->
-> 构建过程需要未公开的完整视觉素材；仅克隆公开仓库无法生成完整版本。
-
----
-
-## 📂 项目结构
+## 项目结构
 
 ```text
 pet-desktop/
-├── assets/
-│   └── images/                 # 仅包含 README 展示截图和演示 GIF
+├── assets/                     # 预览图及本地私有运行素材
 ├── src/
 │   ├── desktop_pet_app.py      # 程序入口
 │   └── desktop_pet/
-│       ├── app.py              # QApplication 初始化
-│       ├── paths.py            # 资源及用户数据路径
-│       ├── settings.py         # 桌宠设置
-│       ├── pet/
-│       │   ├── animation.py
-│       │   ├── behavior_state_machine.py
-│       │   ├── pet_physics.py
-│       │   ├── pet_state.py
-│       │   ├── pet_state_store.py
-│       │   ├── state_decay.py
-│       │   └── pet_window.py
-│       ├── diary/
-│       │   ├── diary_bridge.py
-│       │   ├── diary_store.py
-│       │   ├── diary_window.py
-│       │   └── mood_store.py
+│       ├── app.py              # QApplication、托盘与桌宠窗口
+│       ├── paths.py            # 资源和用户数据路径
+│       ├── settings.py         # 桌宠设置存储
+│       ├── pet/                # 动画、行为状态机、互动、物理与需求值
+│       ├── diary/              # 手帐窗口、WebChannel、日记／心情存储
 │       └── web/
-│           ├── index.html
-│           ├── app.js
-│           └── style.css
-├── DesktopPet.spec             # PyInstaller 配置
+│           ├── index.html      # Home / Diary / Chat / Calendar / Task 页面
+│           ├── scripts/        # 按页面拆分的 JavaScript 模块
+│           └── styles/         # 基础、布局及各页面样式
+├── tests/                      # Web 布局与交互测试
+├── DesktopPet.spec             # PyInstaller 打包配置
 ├── build.bat                   # Windows 构建脚本
 ├── run_app.bat                 # 源码启动脚本
-├── requirements.txt            # 运行依赖
-├── requirements-dev.txt        # 开发及构建依赖
-└── README.md
+├── requirements.txt           # 运行依赖
+└── requirements-dev.txt       # 开发／打包依赖
 ```
 
----
+## 本地数据与隐私
 
-## 💾 本地数据
+源码运行时，日记、心情、桌宠状态与位置等 JSON 数据默认位于项目 `data/`；打包运行时默认位于 `%LOCALAPPDATA%\DesktopPet`。可通过 `DESKTOP_PET_DATA_DIR` 环境变量覆盖此目录。Home 任务另由 Qt WebEngine 的本地存储管理。
 
-源码模式下，用户数据保存在项目的 `data` 目录。
+这些数据保存在用户自己的电脑上，不应加入 Git 仓库或 Release。当前 Chat 是本地界面演示，没有连接任何 AI 服务。
 
-打包后的 Windows 版本将数据保存在：
+## 开发状态
 
-```text
-%LOCALAPPDATA%\DesktopPet
-```
+后续计划包括真正的 AI 对话、与 Home 清单联动的完整 Task 页、可用的 Focus 计时、真实统计摘要、更多设置与互动。上述计划功能**目前尚未实现**。
 
-其中包括：
+## 许可
 
-- 日记内容
-- 每日心情
-- 桌宠状态
-- 桌宠位置和应用设置
-
-这些个人数据不会被包含在 Git 仓库或发布包中。
+仓库中的公开代码采用 [MIT License](LICENSE)。未公开的原创美术与视觉素材不随公开仓库提供。
 
 ---
 
-## 🛠️ 技术栈
-
-- Python
-- PySide6
-- Qt WebEngine
-- QWebChannel
-- HTML
-- CSS
-- JavaScript
-- PyInstaller
-- Pillow
-
----
-
-## 🚧 开发计划
-
-- 接入真正的 AI 对话 API
-- 完善任务页面
-- 添加专注计时功能
-- 增加状态统计和趋势页面
-- 添加应用设置页面
-- 增加更多桌宠互动
-- 增加更多动画和桌宠形象
-- 优化安装包和应用更新体验
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License**.
-
-详细内容请查看 `LICENSE` 文件。
-
----
-
-## 💬 English Summary
-
-Desktop Journal Companion is a Windows desktop application built with Python and PySide6. It combines an animated pixel-art virtual pet with a personal journal, mood tracker, calendar and lightweight task system.
-
-The pet responds to time, inactivity and user interactions through different animations. Users can drag, pet, feed, play with or put the cat to sleep. Journal entries, mood records and pet states are stored locally.
-
-The Chat interface is currently a UI prototype and is not connected to an AI API yet.
+Desktop Journal Companion is a Windows desktop pet and journal built with Python, PySide6, Qt WebEngine and QWebChannel. The current app supports pet interactions, local diary and mood records, a Home task list, and a calendar. The Chat page uses a canned demo reply; the standalone Task and Focus experiences are not implemented yet. The public repository omits the private visual assets required to reproduce the complete packaged app.

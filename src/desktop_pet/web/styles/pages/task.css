@@ -1,0 +1,55 @@
+/* Figma main 873:2965. Keep this preview isolated from Home task controls. */
+.task-page { flex-direction: column; align-items: flex-start; gap: 16px; width: 100%; height: 100%; padding: 18px 22px 0 var(--diary-content-inset); overflow: hidden; border-radius: 10px; background: #fff; }
+.task-page > * { flex-shrink: 0; width: 812px; max-width: none; }
+.tp-header { display: flex; flex-direction: column; gap: 8px; }
+.tp-header p { margin: 0; color: var(--text-secondary); font: 400 16px/normal "Kameron", serif; }
+.tp-header h1 { margin: 0; font: 500 32px/normal "Jost", sans-serif; }
+.tp-tabs { position: relative; display: flex; align-items: flex-start; gap: 32px; height: 47px; border-bottom: 1px solid #888; }
+.tp-tabs button { display: flex; gap: 5px; padding: 10px 0; background: transparent; color: #000; font: 500 16px/normal "Geom", sans-serif; }
+.tp-tabs::after { position: absolute; bottom: 0; left: 0; width: 62px; height: 2.5px; background: #000; content: ""; }
+.tp-quick-add { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; min-height: 50px; padding: 14px 16px; border: 1px solid #efefef; border-radius: 10px; }
+.tp-input { display: flex; align-items: center; gap: 10px; flex-shrink: 0; padding: 2px 0; }
+.tp-input-status { width: 20px; height: 20px; flex-shrink: 0; }
+.tp-input-status { background: radial-gradient(circle closest-side, transparent 60%, var(--border-default) 61%); -webkit-mask: var(--tick-icon) center / contain no-repeat; mask: var(--tick-icon) center / contain no-repeat; }
+.tp-input-status img { width: 100%; height: 100%; visibility: hidden; }
+.tp-status { position: relative; cursor: pointer; }
+.tp-status input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.tp-status input:not(:checked) + img, .tp-input-status img { -webkit-mask-image: radial-gradient(circle closest-side, transparent 60%, #000 61%); mask-image: radial-gradient(circle closest-side, transparent 60%, #000 61%); }
+.tp-status input:focus-visible + img { outline: 2px solid currentColor; outline-offset: 2px; }
+.tp-input input { width: 160px; padding: 0; border: 0; outline: none; background: transparent; font: 500 14px/normal "Geom", sans-serif; }
+.tp-input input::placeholder { color: #b3b3b3; opacity: 1; }
+.tp-add-actions { display: flex; align-items: center; gap: 15px; flex-shrink: 0; }
+.tp-add-actions button, .tp-date { display: flex; align-items: center; gap: 5px; padding: 0; white-space: nowrap; background: transparent; color: #434343; font: 600 12px/normal "Alan Sans", sans-serif; }
+.tp-add-actions img, .tp-date img { width: 20px; height: 20px; }
+.tp-add-actions .tp-dropdown { width: 12px; height: 12px; }
+.tp-add-actions .tp-add { justify-content: space-between; width: 62px; padding: 3px 7px; border: 1px solid #ece8e2; border-radius: 5px; }
+.tp-add img { width: 18px; height: 18px; }
+.tp-section { display: flex; flex-direction: column; gap: 15px; }
+.tp-section h2 { display: flex; gap: 5px; margin: 0; color: #000; font: 500 15px/normal "Geom", sans-serif; }
+.tp-section h2 span { color: #b3b3b3; }
+.tp-list-frame { padding: 10px; border: 1px solid #efefef; border-radius: 10px; }
+.tp-list { display: flex; flex-direction: column; gap: 10px; height: 208px; overflow-x: hidden; overflow-y: auto; border-radius: 10px; }
+.tp-tomorrow { border-color: var(--border-default); }
+.tp-tomorrow .tp-list { height: 142px; }
+.tp-row { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; width: 100%; padding: 11px 15px; border-bottom: 1px solid #ece8e2; background: #fff; }
+.tp-row:last-child { border-bottom: 0; }
+.tp-row-main { display: flex; align-items: center; gap: 20px; min-width: 0; }
+.tp-status, .tp-status img { width: 24px; height: 24px; flex-shrink: 0; }
+.tp-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; overflow-wrap: anywhere; }
+.tp-name { font: 500 14px/normal "Geom", sans-serif; }
+.tp-labels { display: flex; gap: 10px; color: var(--text-secondary); font: 500 13px/normal "Geom", sans-serif; }
+.tp-labels > span { display: flex; align-items: center; gap: 5px; }
+/* Category and priority colors share the task tokens in base.css. */
+.tp-dot { display: inline-block; width: 10px; height: 10px; }
+.tp-row-actions { display: flex; align-items: center; justify-content: space-between; width: 144px; flex-shrink: 0; }
+.tp-row-actions button { padding: 0; background: transparent; }
+.tp-row-actions button img { width: 24px; height: 24px; }
+.task-page button[aria-disabled="true"] { cursor: default; }
+
+@container (max-width: 760px) {
+  .tp-tabs { gap: 20px; height: auto; flex-wrap: wrap; }
+  .tp-row { gap: 12px; }
+  .tp-row-main { gap: 12px; }
+  .tp-row-actions { width: auto; gap: 16px; }
+  .tp-labels { flex-wrap: wrap; }
+}

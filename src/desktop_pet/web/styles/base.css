@@ -1,0 +1,37 @@
+:root {
+  --nav-width: 190px;
+  --right-width: 230px;
+  --content-max-width: 1120px;
+  --text-primary: #161412;
+  --text-secondary: #7b7575;
+  --nav-background: #f9f9f8;
+  --border-default: #d8d5d1;
+  --selected: #eeeeee;
+  --task-category-design: #9EBEF1;
+  --task-category-work: #9CF4A9;
+  --task-category-personal: #B69DF8;
+  --task-category-learning: #FFCC00;
+  --task-priority-low: #E1EBFA;
+  --task-priority-medium: #CFF7D3;
+  --task-priority-high: #FDD3D0;
+}
+
+* { box-sizing: border-box; }
+.home-page .tag-dot[data-category], .task-page .tp-dot { background: var(--task-dot-color, transparent); border-radius: 50%; }
+[data-category="design"] { --task-dot-color: var(--task-category-design); }
+[data-category="work"] { --task-dot-color: var(--task-category-work); }
+[data-category="personal"] { --task-dot-color: var(--task-category-personal); }
+[data-category="learning"] { --task-dot-color: var(--task-category-learning); }
+[data-priority="low"] { --task-dot-color: var(--task-priority-low); }
+[data-priority="medium"] { --task-dot-color: var(--task-priority-medium); }
+[data-priority="high"] { --task-dot-color: var(--task-priority-high); }
+html, body { margin: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; }
+body { color: var(--text-primary); background: #fff; overflow: hidden; }
+button, input { color: inherit; font: inherit; }
+button { border: 0; cursor: pointer; }
+img { display: block; }
+.page { display: none; min-width: 0; min-height: 0; }
+.page.active { display: flex; }
+.page-placeholder { width: 100%; height: 100%; }
+.mood-tooltip { position: fixed; z-index: 10; display: none; padding: 7px 10px; color: #fff; background: #161412; border-radius: 6px; font: 12px/1.25 "Inter", sans-serif; pointer-events: none; }
+.mood-tooltip.visible { display: block; }

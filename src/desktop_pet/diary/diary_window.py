@@ -1,10 +1,11 @@
 from PySide6.QtCore import QUrl, Signal
+from PySide6.QtGui import QIcon
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QMessageBox, QVBoxLayout, QWidget
 
-from ..paths import WEB_DIR
+from ..paths import JOURNAL_ICON_FILE, WEB_ASSETS_DIR, WEB_DIR
 from .diary_bridge import DiaryBridge
 
 
@@ -13,15 +14,24 @@ class DiaryWindow(QWidget):
     page_changed = Signal(str)
     diary_closed = Signal()
 
+    @staticmethod
+    def minimum_size_for_page(page_name: str) -> tuple[int, int]:
+        # Home and Task keep their fixed Figma compositions, with the summary collapsed.
+        return (1050, 720) if page_name in {"home", "task"} else (720, 480)
+
+    def _set_page_minimum(self, page_name: str) -> None:
+        self.setMinimumSize(*self.minimum_size_for_page(page_name))
+
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("今日手帐")
-        # 默认以较小的普通窗口启动；用户最大化后由系统窗口和 Web 布局共同填满屏幕。
+        self.setWindowIcon(QIcon(str(JOURNAL_ICON_FILE)))
+        # Start with the confirmed 1280 x 720 presentation window when possible.
         available_geometry = self.screen().availableGeometry()
-        default_width = min(1200, available_geometry.width())
-        default_height = min(820, available_geometry.height())
-        self.setMinimumSize(960, 700)
+        default_width = min(1280, available_geometry.width())
+        default_height = min(720, available_geometry.height())
+        self._set_page_minimum("home")
         self.resize(default_width, default_height)
         self.move(
             available_geometry.x() + (available_geometry.width() - default_width) // 2,
@@ -36,6 +46,7 @@ class DiaryWindow(QWidget):
 
         self.bridge = DiaryBridge()
         self.bridge.typing_triggered.connect(self.typing_triggered.emit)
+        self.bridge.page_changed.connect(self._set_page_minimum)
         self.bridge.page_changed.connect(self.page_changed.emit)
 
         self.channel = QWebChannel(self)
@@ -48,7 +59,28 @@ class DiaryWindow(QWidget):
 
         # 正式加载独立的 Web 页面和拆分后的 JavaScript 模块。
         html_path = WEB_DIR / "index.html"
-        self.web_view.load(QUrl.fromLocalFile(str(html_path)))
+        html = html_path.read_text(encoding="utf-8")
+
+        # Web code remains in src/desktop_pet/web while all visual assets live
+        # under the single project-level assets directory. Resolve those image
+        # URLs at runtime so the same layout works from source and PyInstaller.
+        asset_base_url = QUrl.fromLocalFile(
+            str(WEB_ASSETS_DIR.resolve()) + "/"
+        ).toString()
+        # Resolve fonts first: their source path also contains "./assets/",
+        # which the generic SVG replacement below would otherwise corrupt.
+        html = html.replace(
+            "../../../assets/web/font/fonts.css",
+            f"{asset_base_url}font/fonts.css",
+        )
+        html = html.replace(
+            "./assets/Head.png",
+            f"{asset_base_url}Head.png",
+        )
+        html = html.replace("./assets/", f"{asset_base_url}svg/")
+
+        web_base_url = QUrl.fromLocalFile(str(WEB_DIR.resolve()) + "/")
+        self.web_view.setHtml(html, web_base_url)
 
     def _save_from_web(self):
         self.bridge.saveTodayEntry(self.bridge.current_text)

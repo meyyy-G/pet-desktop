@@ -1,0 +1,32 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--nav-width) minmax(0, 1fr) var(--right-width);
+  grid-template-rows: minmax(0, 1fr);
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+  border-radius: 0;
+}
+
+/* Diary centers a 1120px content area after the 190px navigation: (190 + 1120) / 2 = 655px. */
+.main-content { grid-column: 2; width: 100%; height: 100%; min-width: 0; min-height: 0; overflow: hidden; background: #fff; container-type: inline-size; --diary-content-inset: max(26px, calc(50vw - 655px)); }
+
+.app-shell[data-active-page="diary"] .main-content { grid-column: 2 / -1; }
+.app-shell[data-active-page="diary"] .right-sidebar { display: none; }
+
+/* Keep the main workspace usable before either sidebar crowds its contents. */
+@media (max-width: 1199px) {
+  .app-shell { grid-template-columns: var(--nav-width) minmax(0, 1fr); }
+  .app-shell .right-sidebar { display: none; }
+}
+
+@media (max-width: 999px) {
+  :root { --nav-width: 72px; }
+}
+
+/* Home and Task need 860px for their fixed 812px content and outer padding. */
+@media (max-width: 1279px) {
+  .app-shell[data-active-page="home"], .app-shell[data-active-page="task"] { grid-template-columns: var(--nav-width) minmax(0, 1fr); }
+  .app-shell[data-active-page="home"] .right-sidebar, .app-shell[data-active-page="task"] .right-sidebar { display: none; }
+}

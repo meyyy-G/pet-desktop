@@ -1,4 +1,4 @@
-import { dom } from "./dom.js";
+import { dom } from "../dom.js";
 
 
 function getTimeLabel() {
@@ -14,17 +14,31 @@ function createMessage(text, role) {
 
   if (role === "assistant") {
     const icon = document.createElement("img");
-    icon.src = "./assets/heart-circle.svg";
+    icon.src = `${document.body.dataset.svgBase}chat/heart-circle.svg`;
     icon.alt = "";
+    icon.className = "chat-avatar";
     message.append(icon);
   }
 
   const body = document.createElement("div");
+  body.className = "chat-message-body";
+  const textRow = document.createElement("div");
+  textRow.className = "chat-message-text";
   const content = document.createElement("p");
   const time = document.createElement("time");
   content.textContent = text;
   time.textContent = getTimeLabel();
-  body.append(content, time);
+  textRow.append(content);
+  if (role === "assistant") {
+    const bookmark = document.createElement("span");
+    bookmark.className = "chat-bookmark";
+    const icon = document.createElement("img");
+    icon.src = `${document.body.dataset.svgBase}chat/bookmark.svg`;
+    icon.alt = "Bookmark";
+    bookmark.append(icon);
+    textRow.append(bookmark);
+  }
+  body.append(textRow, time);
   message.append(body);
   return message;
 }
@@ -35,8 +49,6 @@ function appendMessage(text, role) {
 }
 
 function resizeInput() {
-  dom.chatInput.style.height = "60px";
-  dom.chatInput.style.height = `${Math.min(130, Math.max(60, dom.chatInput.scrollHeight))}px`;
   dom.chatSendButton.disabled = !dom.chatInput.value.trim();
 }
 

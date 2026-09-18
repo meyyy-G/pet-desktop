@@ -20,6 +20,8 @@ else:
 
 ASSETS_DIR = RESOURCE_ROOT / "assets"
 APP_ICON_FILE = ASSETS_DIR / "images" / "app-icon.png"
+JOURNAL_ICON_FILE = ASSETS_DIR / "images" / "Journal_icon.ico"
+WEB_ASSETS_DIR = ASSETS_DIR / "web"
 WEB_DIR = (
     RESOURCE_ROOT / "desktop_pet" / "web"
     if IS_FROZEN

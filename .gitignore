@@ -206,13 +206,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-# Personal application data
-data/diary/
-data/moods/
-
-# Local desktop-pet settings
-data/desktop_pet_settings.json
-data/pet_state.json
+# Personal application data (source-mode runtime directory)
+data/
 
 # PyCharm local project files
 .idea/
@@ -220,6 +215,7 @@ data/pet_state.json
 # Private original visual assets
 assets/animations/
 assets/raw_materials/
+assets/web/
 assets/images/ui/
 src/desktop_pet/web/assets/
 
@@ -235,9 +231,13 @@ assets/images/*
 !assets/images/sleepy.gif
 !assets/images/upset.gif
 !assets/images/angry.gif
+!assets/images/cry.gif
+!assets/images/sick.gif
+!assets/images/heal.gif
 !assets/images/app_diary.png
 !assets/images/日记端盒子猫.gif
 !assets/images/看你打字.gif
 !assets/images/app_home.png
 !assets/images/app_calendar.png
 !assets/images/app_chat.png
+!assets/images/app_task.png

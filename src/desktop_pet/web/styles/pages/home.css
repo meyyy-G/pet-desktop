@@ -1,0 +1,66 @@
+.home-page { flex-direction: column; gap: 24px; width: 100%; height: 100%; padding: 18px 22px 18px var(--diary-content-inset); overflow: hidden; align-items: flex-start; }
+/* Keep the Figma components at their designed size; only outer space grows. */
+.home-page > * { flex: 0 0 auto; width: 812px; max-width: none; }
+.home-header { display: flex; flex-direction: column; gap: 8px; width: 812px; height: 74px; }
+.home-header h1 { margin: 0; font: 500 32px/normal "Jost", sans-serif; }
+.home-header p { margin: 0; color: var(--text-secondary); font: 300 15px/normal "Alan Sans", sans-serif; }
+.mood-card { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; width: 812px; height: 158px; padding: 16px 20px; background: #fff; border: 1px solid var(--border-default); border-radius: 18px; }
+.mood-card h2 { margin: 0; color: var(--text-secondary); font: 400 15px/normal "Kameron", serif; }
+.home-mood-summary { display: flex; align-items: center; gap: 12px; height: 34px; flex: 0 0 34px; }
+.home-mood-copy { display: flex; flex-direction: column; gap: 2px; }
+.home-mood-copy strong { font: 500 16px/19px "Inter", sans-serif; }
+.home-mood-copy small { color: var(--text-secondary); font: 400 12px/13px "Inter", sans-serif; }
+.home-current-mood-icon { width: 24px; height: 24px; mask: var(--mood-icon) center/contain no-repeat; -webkit-mask: var(--mood-icon) center/contain no-repeat; }
+.mood-row { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 12px; width: 772px; flex-shrink: 0; }
+.mood-button { display: flex; flex: 0 0 100px; align-items: center; justify-content: center; gap: 6px; width: 100px; height: 40px; padding: 8px; overflow: hidden; border: 1px solid currentColor; border-radius: 10px; background: color-mix(in srgb, currentColor 12%, white); font: 500 15px/normal "Geom", sans-serif; }
+.mood-button .mood-icon { width: 24px; height: 24px; flex: 0 0 24px; background: currentColor; mask: var(--mood-icon) center/contain no-repeat; -webkit-mask: var(--mood-icon) center/contain no-repeat; }
+.mood-stress { color: #757575; }.mood-low { color: #1471da; }.mood-anxious { color: #ff6a6a; }.mood-steady { color: #8fb994; }.mood-light { color: #ffa59e; }.mood-inspired { color: #b69df8; }.mood-grateful { color: #fc0; gap: 4px; padding-inline: 5px; }
+.mood-button.selected { box-shadow: inset 0 0 0 1px currentColor; }
+.home-workspace { display: grid; grid-template-columns: 316px 340px; grid-template-rows: 404px; align-items: start; gap: 100px; width: 812px; height: 404px; flex: 0 0 404px; padding: 0 22px; }
+.home-panel { min-width: 0; min-height: 0; height: 100%; padding: 20px; background: #fff; border: 1px solid var(--border-default); border-radius: 18px; }
+.task-card { display: flex; flex-direction: column; gap: 16px; width: 100%; }
+.panel-heading { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; width: 100%; }
+.panel-heading h2 { margin: 0; font: 500 20px/normal "Jost", sans-serif; }
+.task-add-button { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--selected); border-radius: 8px; font: 500 13px/normal "Geom", sans-serif; }
+.task-add-button img { width: 12px; height: 12px; }
+.task-items { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 12px; width: 100%; overflow-y: auto; }
+.task-row { display: flex; flex: 0 0 60px; align-items: center; gap: 12px; width: 100%; height: 60px; padding: 16px; background: #faf7f5; border: 1px solid #ece8e2; border-radius: 12px; }
+.task-row label { position: relative; flex: 0 0 24px; width: 24px; height: 24px; }
+.task-checkbox { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.task-checkbox-visual { display: block; width: 24px; height: 24px; }
+.task-checkbox-visual img { display: block; width: 24px; height: 24px; }
+/* Keep the asset's ring; reveal its central tick only when checked. */
+.task-checkbox:not(:checked) + .task-checkbox-visual img { -webkit-mask-image: radial-gradient(circle closest-side, transparent 60%, #000 61%); mask-image: radial-gradient(circle closest-side, transparent 60%, #000 61%); }
+.task-checkbox:focus-visible + .task-checkbox-visual { outline: 2px solid currentColor; outline-offset: 2px; }
+.task-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
+.task-description { width: 100%; height: 17px; padding: 0; background: transparent; border: 0; outline: 0; font: 500 14px/normal "Geom", sans-serif; }
+.task-copy > span { display: flex; align-items: center; gap: 7px; color: var(--text-secondary); font: 500 13px/normal "Geom", sans-serif; white-space: nowrap; }
+.tag-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #9ebef1; }.tag-dot.personal { background: #b69aff; }.tag-dot.coding { background: #9cf3ab; }
+.task-delete-button { flex: 0 0 24px; width: 24px; height: 24px; padding: 0; background: transparent; }
+.task-delete-button img { width: 24px; height: 24px; }
+.home-task-menu { position: fixed; z-index: 30; min-width: 96px; padding: 4px; border: 1px solid var(--border-default); border-radius: 8px; background: #fff; box-shadow: 0 4px 12px #00000014; }
+.home-task-menu[hidden] { display: none; }
+.home-task-menu button { display: block; width: 100%; padding: 8px 12px; border-radius: 4px; background: transparent; text-align: left; font: 400 14px/normal "Inter", sans-serif; }
+.home-task-menu button:hover, .home-task-menu button:focus-visible { background: var(--selected); outline: none; }
+.task-row.is-completed .task-description { text-decoration: line-through; }
+.mini-calendar-card { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+.mini-calendar-card > * { flex-shrink: 0; }
+.calendar-controls { display: flex; align-items: center; gap: 8px; }
+.calendar-controls button { width: 20px; height: 20px; padding: 0; background: transparent; }
+.calendar-controls img { width: 20px; height: 20px; }
+.mini-calendar-week, .mini-calendar-grid { display: grid; grid-template-columns: repeat(7, 40px); justify-content: space-between; width: 100%; }
+.mini-calendar-week span { color: var(--text-secondary); font: 600 12px/normal "Alan Sans", sans-serif; text-align: center; }
+.mini-calendar-grid { grid-template-rows: repeat(4, 40px); row-gap: 8px; }
+/* Figma 824:1819 keeps four visible rows on each Mini Calendar page. */
+.mini-calendar-grid > :nth-child(n + 29) { display: none; }
+.mini-calendar-grid > button, .mini-calendar-grid > span { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: var(--text-primary); font: 600 14px/normal "Alan Sans", sans-serif; }
+.mini-calendar-grid > button { transition: background-color 300ms ease-out, color 300ms ease-out, border-color 300ms ease-out; }
+.mini-calendar-grid > .mini-outside { color: var(--text-secondary); border: 1px solid var(--border-default); font-weight: 400; }
+.mini-calendar-grid > .mini-empty { visibility: hidden; }
+.mini-calendar-grid > button.mood-history, .mini-calendar-grid > button.mood-today { background: var(--mood-color); }
+.mini-calendar-grid > button:not(.mood-history):not(.mood-today) { border: 1px solid var(--border-default); background: transparent; }
+.mini-calendar-grid > button.mini-future { opacity: 1; }
+.upcoming { display: flex; flex-direction: column; gap: 12px; }
+.upcoming h3 { margin: 0 0 1px; color: var(--text-secondary); font: 600 12px/normal "Geom", sans-serif; }
+.upcoming p { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--text-secondary); font: 400 12px/normal "Lato", "Alan Sans", sans-serif; }
+.upcoming img { width: 16px; height: 16px; }

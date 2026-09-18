@@ -46,7 +46,6 @@ class PetWindow(QWidget):
             self.state.satiety,
             self.state.mood,
             self.state.energy,
-            previous_satiety=loaded_state.satiety_before_offline_decay,
         )
 
         self.animation = PetAnimation(self.settings.scale, self)
@@ -61,6 +60,9 @@ class PetWindow(QWidget):
                 self.state.energy,
             )
         )
+        if self.behavior.is_sick:
+            self.need_indicator.set_care_hint("sick")
+        self.behavior.treatment_due.connect(self._complete_treatment)
 
         self.state_decay = PetStateDecay(
             self.state,
@@ -169,9 +171,9 @@ class PetWindow(QWidget):
                 self.behavior.state is BehaviorState.TEMPORARY
                 and self.animation.state == "sleeping"
             )
-            self._register_interaction()
 
             if self.woke_from_sleep_on_press:
+                self._register_interaction()
                 self.state.current_animation = "idle"
                 self._show_status()
 
@@ -197,6 +199,10 @@ class PetWindow(QWidget):
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
+            if self._care_interaction_blocked():
+                event.accept()
+                return
+
             self.physics.handle_double_click()
             self._register_interaction()
             self._open_diary_window()
@@ -215,6 +221,9 @@ class PetWindow(QWidget):
         self._add_action(menu, "喂小猫", self._feed)
         self._add_action(menu, "陪小猫玩", self._play)
         self._add_action(menu, "让小猫睡觉", self._sleep)
+
+        if self.behavior.is_sick:
+            self._add_action(menu, "治疗", self._treat)
 
         menu.addSeparator()
 
@@ -254,6 +263,9 @@ class PetWindow(QWidget):
         menu.addAction(action)
 
     def _feed(self) -> None:
+        if self._care_interaction_blocked():
+            return
+
         old_satiety = self.state.satiety
         self.state.feed()
         self._show_status()
@@ -261,6 +273,9 @@ class PetWindow(QWidget):
         self.state_decay.commit_manual_change(old_satiety)
 
     def _play(self) -> None:
+        if self._care_interaction_blocked():
+            return
+
         if not self.state.can_play():
             self._show_status()
             return
@@ -272,6 +287,9 @@ class PetWindow(QWidget):
         self.state_decay.commit_manual_change(old_satiety)
 
     def _sleep(self) -> None:
+        if self._care_interaction_blocked():
+            return
+
         old_satiety = self.state.satiety
         self.state.sleep()
         self._show_status()
@@ -281,6 +299,10 @@ class PetWindow(QWidget):
     def _touch_cat(self) -> None:
         self._save_position()
 
+        if self._care_interaction_blocked():
+            self.woke_from_sleep_on_press = False
+            return
+
         if self.woke_from_sleep_on_press:
             self.woke_from_sleep_on_press = False
             return
@@ -288,7 +310,7 @@ class PetWindow(QWidget):
         old_satiety = self.state.satiety
         self.state.touch()
         self._show_status()
-        self._play_temporary(self.state.current_animation, 1800)
+        self.behavior.play_touch(1800)
         self.state_decay.commit_manual_change(old_satiety)
 
     def _start_carry(self) -> None:
@@ -339,9 +361,36 @@ class PetWindow(QWidget):
         mood: int,
         energy: int,
     ) -> None:
-        self.behavior.update_need_animation(
-            resolve_need_animation(satiety, mood, energy)
-        )
+        need_animation = resolve_need_animation(satiety, mood, energy)
+        self.behavior.update_need_animation(need_animation)
+        if self.behavior.is_sick:
+            self.need_indicator.set_care_hint("sick")
+
+    def _care_interaction_blocked(self) -> bool:
+        """统一拦截 Sick/Treating 期间除 Carry 外的普通互动。"""
+        if not self.behavior.is_care_locked:
+            return False
+
+        self.need_indicator.show_care_hint()
+        return True
+
+    def _treat(self) -> None:
+        if not self.behavior.start_treating():
+            return
+
+        self.need_indicator.set_care_hint("treating")
+
+    def _complete_treatment(self) -> None:
+        if not self.behavior.is_treating:
+            return
+
+        self.state.satiety = 75
+        self.state.mood = 75
+        self.state.energy = 75
+        self.state.current_animation = "idle"
+        self.behavior.complete_treatment()
+        self.need_indicator.set_care_hint(None)
+        self.state_decay.commit_manual_change(self.state.satiety)
 
     def _register_interaction(self) -> None:
         """点击或拖拽重置行为无互动时间；数值衰减不受影响。"""

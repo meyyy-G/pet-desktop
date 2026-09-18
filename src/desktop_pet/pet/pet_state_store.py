@@ -26,11 +26,10 @@ class PetStateTimes:
 class LoadedPetState:
     state: PetState
     times: PetStateTimes
-    satiety_before_offline_decay: int
 
 
 class PetStateStore:
-    """负责JSON 数据持久化及离线结算。"""
+    """负责 JSON 数据持久化；三个需求值离线期间保持不变。"""
 
     def __init__(self, path: Path = PET_STATE_FILE):
         self.path = path
@@ -40,7 +39,6 @@ class PetStateStore:
         defaults = LoadedPetState(
             state=PetState(),
             times=PetStateTimes(now, now, now),
-            satiety_before_offline_decay=80,
         )
 
         if not self.path.exists():
@@ -57,34 +55,16 @@ class PetStateStore:
             mood=self._clamp_value(data.get("mood", 80)),
             energy=self._clamp_value(data.get("energy", 80)),
         )
-        last_satiety_update = self._parse_time(
-            data.get("last_satiety_update"),
-            now,
-        )
-        last_satiety_update = min(last_satiety_update, now)
-        # 心情值和精力值离线期间不下降；启动时从当前时刻重新计时。
+        # 三个需求值离线期间都不下降；启动时从当前时刻重新计时。
         times = PetStateTimes(
-            last_satiety_update=last_satiety_update,
+            last_satiety_update=now,
             last_mood_update=now,
             last_energy_update=now,
         )
 
-        old_satiety = state.satiety
-        elapsed = max(timedelta(0), now - last_satiety_update)
-        drop_count = int(elapsed // SATIETY_DROP_INTERVAL)
-        if drop_count > 0:
-            state.satiety = max(
-                0,
-                state.satiety - drop_count * SATIETY_DROP_AMOUNT,
-            )
-            times.last_satiety_update = (
-                last_satiety_update + drop_count * SATIETY_DROP_INTERVAL
-            )
-
         return LoadedPetState(
             state=state,
             times=times,
-            satiety_before_offline_decay=old_satiety,
         )
 
     def save(self, state: PetState, times: PetStateTimes) -> None:
@@ -112,15 +92,6 @@ class PetStateStore:
             return max(0, min(100, int(value)))
         except (TypeError, ValueError):
             return 80
-
-    @staticmethod
-    def _parse_time(value, fallback: datetime) -> datetime:
-        if not isinstance(value, str):
-            return fallback
-        try:
-            return PetStateStore._as_utc(datetime.fromisoformat(value))
-        except ValueError:
-            return fallback
 
     @staticmethod
     def _as_utc(value: datetime) -> datetime:

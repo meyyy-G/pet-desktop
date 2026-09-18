@@ -29,7 +29,7 @@ def resolve_need_animation(
 ) -> str | None:
     """Return one body animation, preferring severity before need order."""
     rules = (
-        (15, ((satiety, "die"), (energy, "sleep"), (mood, "sick"))),
+        (15, ((satiety, "sick"), (energy, "sleep"), (mood, "sick"))),
         (25, ((satiety, "angry"), (energy, "sleepy"), (mood, "cry"))),
         (50, ((satiety, "upset"), (energy, "sleepy"), (mood, "upset"))),
     )
