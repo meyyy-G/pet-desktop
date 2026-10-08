@@ -3,6 +3,7 @@ import { state } from "./state.js";
 import { connectDiaryBridge } from "./qt-bridge.js";
 import { bindNavigationEvents } from "./navigation.js";
 import {
+  bindFocusToggle,
   bindMoodEvents,
   loadRecordedMoods,
   renderMiniCalendar,
@@ -11,8 +12,8 @@ import {
   updateWeekStrip,
 } from "./pages/home.js";
 import { bindCalendarEvents, renderCalendar } from "./pages/calendar.js";
-import { bindTaskEvents } from "./pages/task.js";
-import { bindChatEvents } from "./pages/chat.js";
+import { bindTaskEvents, loadTasks } from "./pages/task.js";
+import { bindChatEvents, loadChat } from "./pages/chat.js";
 import {
   bindDiaryEvents,
   discardCurrentEntry,
@@ -26,6 +27,7 @@ bindNavigationEvents();
 bindCalendarEvents(requestOpenDate);
 bindDiaryEvents();
 bindMoodEvents();
+bindFocusToggle();
 bindTaskEvents();
 bindChatEvents();
 
@@ -65,6 +67,8 @@ connectDiaryBridge((bridge) => {
   updateHomeHeader();
   renderMiniCalendar();
   loadRecordedMoods();
+  loadTasks();
+  loadChat();
   if (document.querySelector("#diary-editor")) loadTodayEntry();
   loadRecordedDates();
   renderCalendar();

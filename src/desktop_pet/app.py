@@ -3,11 +3,13 @@ import sys
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
+from .data_migration import migrate_legacy_data
 from .paths import APP_ICON_FILE
 from .pet.pet_window import PetWindow
 
 
 def main() -> int:
+    migrate_legacy_data()
     app = QApplication(sys.argv)
     app.setApplicationName("DesktopPet")
     app.setWindowIcon(QIcon(str(APP_ICON_FILE)))

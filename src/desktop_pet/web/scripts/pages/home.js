@@ -50,6 +50,18 @@ export function updateHomeHeader() {
   if (dom.homeDateLine) dom.homeDateLine.textContent = `${weekdays[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()} · A good day to check in with yourself.`;
 }
 
+/** Toggle the sidebar focus control between its inactive and active icons. */
+export function bindFocusToggle() {
+  dom.focusToggle?.addEventListener("click", () => {
+    const active = dom.focusToggle.getAttribute("aria-pressed") !== "true";
+    dom.focusToggle.setAttribute("aria-pressed", String(active));
+    dom.focusToggle.setAttribute("aria-label", active ? "Stop focus" : "Start focus");
+    dom.focusToggle.querySelector("img").src = active
+      ? dom.focusToggle.dataset.activeSrc
+      : dom.focusToggle.dataset.inactiveSrc;
+  });
+}
+
 // 首页中的心情模块：负责心情按钮、提示文字和首页迷你日历。
 const monthNames = [
   "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
@@ -100,14 +112,18 @@ export function renderMoodDisplays() {
   if (dom.diaryMoodLabel) dom.diaryMoodLabel.hidden = !diaryMood;
   if (dom.diaryMoodPill) dom.diaryMoodPill.hidden = !diaryMood;
   if (dom.diaryMoodText) dom.diaryMoodText.textContent = diaryMood || "";
-  const diaryMoodIcon = dom.diaryMoodPill?.querySelector("img");
+  const diaryMoodIcon = dom.diaryMoodPill?.querySelector(".diary-mood-icon");
   if (diaryMoodIcon) {
     diaryMoodIcon.hidden = !diaryMood;
     if (diaryMood) {
-      diaryMoodIcon.src = `${document.body.dataset.svgBase}moodcard/${moodIconFiles[diaryMood]}`;
+      diaryMoodIcon.style.setProperty("--mood-icon", `url("${document.body.dataset.svgBase}moodcard/${moodIconFiles[diaryMood]}")`);
     }
   }
   applyMoodDisplay(dom.diaryMoodPill, diaryMood);
+  const matchingMoodButton = [...(dom.moodButtons || [])].find(button => button.dataset.mood === diaryMood);
+  if (dom.diaryMoodPill && matchingMoodButton && typeof getComputedStyle === "function") {
+    dom.diaryMoodPill.style.setProperty("--display-mood-color", getComputedStyle(matchingMoodButton).color);
+  }
 
   if (dom.snapshotMoodName) dom.snapshotMoodName.textContent = todayMood || "Not set";
   if (dom.snapshotMoodDetail) {
@@ -161,7 +177,14 @@ function updateMoodButtonState() {
   if (dom.homeMoodDetail) {
     dom.homeMoodDetail.textContent = mainMoodDetails[selectedMood] || "No check-in yet";
   }
-  if (dom.homeMoodIcon) dom.homeMoodIcon.hidden = !selectedMood;
+  if (dom.homeMoodIcon) {
+    dom.homeMoodIcon.hidden = !selectedMood;
+    if (selectedMood) {
+      dom.homeMoodIcon.style.setProperty("--mood-icon", `url("${document.body.dataset.svgBase}moodcard/${moodIconFiles[selectedMood]}")`);
+      dom.homeMoodIcon.style.background = moodColors[selectedMood];
+      dom.homeMoodIcon.closest(".home-mood-icon-shell")?.style.setProperty("--display-mood-color", moodColors[selectedMood]);
+    }
+  }
   dom.moodButtons.forEach((button) => {
     button.classList.toggle("selected", button.dataset.mood === selectedMood);
     if (button.dataset.mood === selectedMood && dom.homeMoodIcon) {
@@ -172,7 +195,17 @@ function updateMoodButtonState() {
       if (dom.homeMoodName) dom.homeMoodName.style.color = isToday ? "" : displayColor;
     }
   });
+  if (dom.homeMoodName) dom.homeMoodName.style.color = "";
   if (!selectedMood && dom.homeMoodName) dom.homeMoodName.style.color = "";
+  dom.homeMoodMenuButtons?.forEach((button) => {
+    button.setAttribute("aria-checked", String(button.dataset.mood === selectedMood));
+  });
+}
+
+function setHomeMoodMenuOpen(open) {
+  if (!dom.homeMoodMenu || !dom.homeMoodTrigger) return;
+  dom.homeMoodMenu.hidden = !open;
+  dom.homeMoodTrigger.setAttribute("aria-expanded", String(open));
 }
 
 function syncMiniCalendarSelection() {
@@ -283,6 +316,31 @@ export function loadRecordedMoods() {
 
 // 注册心情按钮的提示和保存事件。
 export function bindMoodEvents() {
+  dom.homeMoodTrigger?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    setHomeMoodMenuOpen(dom.homeMoodMenu?.hidden !== false);
+  });
+
+  dom.homeMoodMenu?.addEventListener("click", (event) => event.stopPropagation());
+  dom.homeMoodMenuButtons?.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mood = button.dataset.mood;
+      const targetDateText = state.selectedMiniDate || toDateText(new Date());
+      if (!mood || !state.diaryBridge) return;
+      state.diaryBridge.saveMoodByDate(targetDateText, mood, () => {
+        state.recordedMoods[targetDateText] = mood;
+        setHomeMoodMenuOpen(false);
+        renderMiniCalendar();
+        renderCalendar();
+      });
+    });
+  });
+
+  document.addEventListener("click", () => setHomeMoodMenuOpen(false));
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setHomeMoodMenuOpen(false);
+  });
+
   dom.miniPrevMonthButton?.addEventListener("click", () => {
     if (state.miniCalendarPage > 0) {
       state.miniCalendarPage -= 1;

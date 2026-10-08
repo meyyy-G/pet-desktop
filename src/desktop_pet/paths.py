@@ -29,5 +29,21 @@ WEB_DIR = (
 )
 data_dir_override = os.environ.get("DESKTOP_PET_DATA_DIR")
 DATA_DIR = Path(data_dir_override) if data_dir_override else default_data_dir
-SETTINGS_FILE = DATA_DIR / "desktop_pet_settings.json"
-PET_STATE_FILE = DATA_DIR / "pet_state.json"
+CONFIG_DIR = DATA_DIR / "config"
+PET_DATA_DIR = DATA_DIR / "pet"
+JOURNAL_DIR = DATA_DIR / "journal"
+TASKS_DIR = DATA_DIR / "tasks"
+CHAT_DIR = DATA_DIR / "chat"
+
+SETTINGS_FILE = CONFIG_DIR / "settings.json"
+PET_STATE_FILE = PET_DATA_DIR / "state.json"
+TASKS_FILE = TASKS_DIR / "tasks.json"
+CHAT_FILE = CHAT_DIR / "chat.json"
+
+# Read only during the one-time migration from the original flat layout.
+LEGACY_SETTINGS_FILE = DATA_DIR / "desktop_pet_settings.json"
+LEGACY_PET_STATE_FILE = DATA_DIR / "pet_state.json"
+LEGACY_TASKS_FILE = DATA_DIR / "tasks.json"
+LEGACY_CHAT_FILE = DATA_DIR / "saved_chat.json"
+LEGACY_DIARY_DIR = DATA_DIR / "diary"
+LEGACY_MOODS_DIR = DATA_DIR / "moods"

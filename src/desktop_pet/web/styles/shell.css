@@ -25,8 +25,8 @@
   :root { --nav-width: 72px; }
 }
 
-/* Home and Task need 860px for their fixed 812px content and outer padding. */
+/* Fixed-width Home, Calendar, and Task canvases hide the summary when cramped. */
 @media (max-width: 1279px) {
-  .app-shell[data-active-page="home"], .app-shell[data-active-page="task"] { grid-template-columns: var(--nav-width) minmax(0, 1fr); }
-  .app-shell[data-active-page="home"] .right-sidebar, .app-shell[data-active-page="task"] .right-sidebar { display: none; }
+  .app-shell[data-active-page="home"], .app-shell[data-active-page="calendar"], .app-shell[data-active-page="task"] { grid-template-columns: var(--nav-width) minmax(0, 1fr); }
+  .app-shell[data-active-page="home"] .right-sidebar, .app-shell[data-active-page="calendar"] .right-sidebar, .app-shell[data-active-page="task"] .right-sidebar { display: none; }
 }

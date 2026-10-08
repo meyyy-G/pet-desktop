@@ -1,4 +1,5 @@
 import { dom } from "./dom.js";
+import { createHomeTask } from "./pages/task.js";
 
 // 导航模块：只负责左侧导航和页面显示切换。
 
@@ -34,8 +35,10 @@ export function bindNavigationEvents() {
     item.addEventListener("click", () => showPage(item.dataset.page));
   });
 
+  dom.taskAddButton?.addEventListener("click", () => showPage("task"));
+
   dom.newTaskQuickAction?.addEventListener("click", () => {
     showPage("home");
-    dom.taskAddButton?.click();
+    createHomeTask();
   });
 }

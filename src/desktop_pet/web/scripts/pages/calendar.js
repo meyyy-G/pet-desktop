@@ -5,6 +5,20 @@ import { calendarMoodColors, isFutureDate, state, toDateText } from "../state.js
 let onDateRequested = null;
 const cellsPerPage = 35;
 
+function fitCalendarToPage() {
+  const page = document.querySelector(".calendar-page");
+  const content = page?.querySelector(".calendar-content");
+  if (!page?.getClientRects().length || !content) return;
+
+  content.style.zoom = "1";
+  const pageRect = page.getBoundingClientRect();
+  const contentRect = content.getBoundingClientRect();
+  const availableWidth = page.clientWidth - 52;
+  const availableHeight = pageRect.bottom - contentRect.top - 14;
+  const scale = Math.min(1.2, availableWidth / contentRect.width, availableHeight / contentRect.height);
+  content.style.zoom = String(Math.max(0.5, scale));
+}
+
 function pageCount(date) {
   return Math.ceil((new Date(date.getFullYear(), date.getMonth(), 1).getDay()
     + new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()) / cellsPerPage);
@@ -48,6 +62,7 @@ export function renderCalendar() {
       button.classList.add("mood-recorded");
     }
 
+    if (dateText === toDateText(new Date())) button.classList.add("today");
     if (dateText === toDateText(state.currentDate)) button.classList.add("selected");
     if (state.recordedDates.has(dateText)) button.classList.add("recorded");
 
@@ -68,6 +83,7 @@ export function renderCalendar() {
 // 注册月份切换按钮和日期点击回调。
 export function bindCalendarEvents(dateRequestedHandler) {
   onDateRequested = dateRequestedHandler;
+  new ResizeObserver(fitCalendarToPage).observe(document.querySelector(".calendar-page"));
 
   dom.prevMonthButton?.addEventListener("click", () => {
     if (state.calendarPage > 0) {

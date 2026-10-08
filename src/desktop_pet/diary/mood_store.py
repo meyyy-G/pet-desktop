@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..paths import DATA_DIR
+from ..paths import JOURNAL_DIR
 
 
 @dataclass
@@ -13,7 +13,7 @@ class MoodEntry:
 
 class MoodStore:
     def __init__(self):
-        self.mood_dir = DATA_DIR / "moods"
+        self.mood_dir = JOURNAL_DIR
 
     def save_mood(self, date: str, mood: str) -> MoodEntry:
         entry = MoodEntry(date=date, mood=mood)
@@ -21,10 +21,18 @@ class MoodStore:
         path = self._mood_path(date)
         path.parent.mkdir(parents=True, exist_ok=True)
 
-        data = {
+        data = {}
+        if path.exists():
+            try:
+                existing = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(existing, dict):
+                    data.update(existing)
+            except (json.JSONDecodeError, OSError):
+                pass
+        data.update({
             "date": entry.date,
             "mood": entry.mood,
-        }
+        })
 
         path.write_text(
             json.dumps(data, ensure_ascii=False, indent=2),
