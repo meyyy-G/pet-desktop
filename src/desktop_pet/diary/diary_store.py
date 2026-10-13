@@ -95,7 +95,7 @@ class DiaryStore:
             date = data.get("date", path.stem)
             text = data.get("text", "")
 
-            if text.strip():
+            if text.strip() or 'data-diary-image=' in str(data.get("html", "")):
                 recorded.add(date)
 
         return recorded

@@ -26,6 +26,12 @@ test('Quick Add and Task tabs expose the required controls', () => {
   assert.doesNotMatch(html, /id="task-category-select"/);
 });
 
+test('Today and Home render only periods with tasks', () => {
+  assert.match(source, /if \(!period\.tasks\.length\) continue;/);
+  assert.match(source, /\["day", "night"\]\.filter\(period => tasks\.some\(task => task\.period === period\)\)/);
+  assert.doesNotMatch(source, /list\.append\(\.\.\.\(periodTasks\.length \? periodTasks\.map/);
+});
+
 test('Date and combined priority menus follow the requested options', () => {
   assert.match(source, /menuButton\("Today"[\s\S]*menuButton\("Pick a day"/);
   assert.match(source, /TIME OF DAY/);

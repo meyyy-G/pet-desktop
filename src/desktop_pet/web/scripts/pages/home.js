@@ -1,6 +1,6 @@
 import { dom } from "../dom.js";
 import { renderCalendar } from "./calendar.js";
-import { calendarMoodColors, getDayPeriod, moodColors, state, toDateText } from "../state.js";
+import { calendarMoodColors, getDayPeriod, isFutureDate, moodColors, state, toDateText } from "../state.js";
 
 // 首页模块：只负责首页日期和问候语。
 const shortWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -110,7 +110,10 @@ export function renderMoodDisplays() {
   const todayMood = state.recordedMoods[toDateText(new Date())];
 
   if (dom.diaryMoodLabel) dom.diaryMoodLabel.hidden = !diaryMood;
-  if (dom.diaryMoodPill) dom.diaryMoodPill.hidden = !diaryMood;
+  if (dom.diaryMoodPill) {
+    dom.diaryMoodPill.hidden = !diaryMood;
+    dom.diaryMoodPill.dataset.mood = diaryMood || "";
+  }
   if (dom.diaryMoodText) dom.diaryMoodText.textContent = diaryMood || "";
   const diaryMoodIcon = dom.diaryMoodPill?.querySelector(".diary-mood-icon");
   if (diaryMoodIcon) {
@@ -168,6 +171,10 @@ function hideMoodTooltip() {
 
 function updateMoodButtonState() {
   const selectedMood = state.recordedMoods[state.selectedMiniDate];
+  if (dom.homeMoodTrigger) {
+    if (selectedMood && moodColors[selectedMood]) dom.homeMoodTrigger.style.setProperty("--display-mood-color", moodColors[selectedMood]);
+    else dom.homeMoodTrigger.style.removeProperty("--display-mood-color");
+  }
   const todayText = toDateText(new Date());
   const isToday = state.selectedMiniDate === todayText;
   const [, month, day] = state.selectedMiniDate.split("-").map(Number);
@@ -236,6 +243,65 @@ function animateMiniMoodSelection() {
   }
 }
 
+const homeNoteValues = new Map();
+const homeNoteDrafts = new Map();
+let homeNoteRequest = 0;
+
+function showHomeNote(note) {
+  if (!dom.homeNoteField) return;
+  const value = String(note || "");
+  dom.homeNoteField.classList.toggle("is-empty", !value);
+  dom.homeNoteField.classList.remove("is-editing", "has-text");
+  dom.homeNoteDisplay.textContent = value || "Add a note...";
+  dom.homeNoteDisplay.hidden = false;
+  dom.homeMoodNote.hidden = true;
+  dom.homeNoteSave.hidden = true;
+}
+
+function loadHomeNote() {
+  const date = state.selectedMiniDate;
+  const request = ++homeNoteRequest;
+  if (homeNoteDrafts.has(date)) {
+    editHomeNote(homeNoteDrafts.get(date), false);
+    return;
+  }
+  if (homeNoteValues.has(date)) showHomeNote(homeNoteValues.get(date));
+  else showHomeNote("");
+  if (!state.diaryBridge?.getMoodNoteByDate) return;
+  state.diaryBridge.getMoodNoteByDate(date, (note) => {
+    homeNoteValues.set(date, String(note || ""));
+    if (request === homeNoteRequest && state.selectedMiniDate === date && !homeNoteDrafts.has(date)) showHomeNote(note);
+  });
+}
+
+function editHomeNote(value = homeNoteValues.get(state.selectedMiniDate) || "", focus = true) {
+  if (!dom.homeNoteField) return;
+  homeNoteDrafts.set(state.selectedMiniDate, value);
+  dom.homeMoodNote.value = value;
+  dom.homeNoteField.classList.add("is-editing");
+  dom.homeNoteField.classList.toggle("has-text", Boolean(value));
+  dom.homeNoteDisplay.hidden = true;
+  dom.homeMoodNote.hidden = false;
+  dom.homeNoteSave.hidden = value === (homeNoteValues.get(state.selectedMiniDate) || "");
+  if (focus) dom.homeMoodNote.focus();
+}
+
+function saveHomeNote() {
+  const date = state.selectedMiniDate;
+  const note = dom.homeMoodNote.value.trim();
+  if (!state.diaryBridge?.saveMoodNoteByDate) return;
+  dom.homeNoteSave.disabled = true;
+  state.diaryBridge.saveMoodNoteByDate(date, note, (saved) => {
+    dom.homeNoteSave.disabled = false;
+    homeNoteValues.set(date, String(saved || ""));
+    homeNoteDrafts.delete(date);
+    if (state.selectedMiniDate === date) {
+      dom.homeNoteSave.blur();
+      showHomeNote(saved);
+    }
+  });
+}
+
 export function renderMiniCalendar() {
   if (!dom.miniCalendarGrid) return;
 
@@ -249,6 +315,7 @@ export function renderMiniCalendar() {
   const year = state.miniVisibleMonth.getFullYear();
   const month = state.miniVisibleMonth.getMonth();
   const todayText = toDateText(today);
+  if (isFutureDate(state.selectedMiniDate)) state.selectedMiniDate = todayText;
 
   dom.miniCalendarGrid.innerHTML = "";
   const startOffset = new Date(year, month, 1).getDay();
@@ -282,16 +349,26 @@ export function renderMiniCalendar() {
     const dayCell = document.createElement("button");
     dayCell.textContent = String(day);
     dayCell.dataset.date = dateText;
+    const future = isFutureDate(dateText);
+    if (future) {
+      dayCell.classList.add("mini-future");
+      dayCell.setAttribute("aria-disabled", "true");
+    }
 
     dayCell.addEventListener("click", () => {
+      if (future) {
+        dom.futureModal?.classList.add("visible");
+        return;
+      }
       state.selectedMiniDate = dateText;
       syncMiniCalendarSelection();
       updateMoodButtonState();
+      loadHomeNote();
       animateMiniMoodSelection();
     });
 
     const mood = state.recordedMoods[dateText];
-    if (mood && calendarMoodColors[mood]) {
+    if (!future && mood && calendarMoodColors[mood]) {
       dayCell.style.setProperty("--mood-color", calendarMoodColors[mood]);
       dayCell.classList.add(dateText === todayText ? "mood-today" : "mood-history");
     }
@@ -311,11 +388,27 @@ export function loadRecordedMoods() {
     state.recordedMoods = moods || {};
     renderMiniCalendar();
     renderCalendar();
+    loadHomeNote();
   });
 }
 
 // 注册心情按钮的提示和保存事件。
 export function bindMoodEvents() {
+  dom.homeNoteField?.addEventListener("click", (event) => {
+    if (event.target.closest("#home-note-save") || dom.homeNoteField.classList.contains("is-editing")) return;
+    editHomeNote(homeNoteDrafts.get(state.selectedMiniDate));
+  });
+  dom.homeMoodNote?.addEventListener("input", () => {
+    const value = dom.homeMoodNote.value;
+    homeNoteDrafts.set(state.selectedMiniDate, value);
+    dom.homeNoteField.classList.toggle("has-text", Boolean(value));
+    dom.homeNoteSave.hidden = value === (homeNoteValues.get(state.selectedMiniDate) || "");
+  });
+  dom.homeMoodNote?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); saveHomeNote(); }
+    if (event.key === "Escape") { homeNoteDrafts.delete(state.selectedMiniDate); showHomeNote(homeNoteValues.get(state.selectedMiniDate)); }
+  });
+  dom.homeNoteSave?.addEventListener("click", saveHomeNote);
   dom.homeMoodTrigger?.addEventListener("click", (event) => {
     event.stopPropagation();
     setHomeMoodMenuOpen(dom.homeMoodMenu?.hidden !== false);

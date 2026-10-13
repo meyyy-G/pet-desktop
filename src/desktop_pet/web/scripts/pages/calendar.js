@@ -54,6 +54,7 @@ export function renderCalendar() {
     const dateText = toDateText(new Date(year, month, day));
     const button = document.createElement("button");
     button.className = "calendar-day";
+    button.dataset.date = dateText;
     button.textContent = String(day);
 
     const mood = state.recordedMoods[dateText];
@@ -71,7 +72,7 @@ export function renderCalendar() {
       button.disabled = true;
     } else {
       button.addEventListener("click", () => {
-        if (onDateRequested) onDateRequested(dateText);
+        if (onDateRequested) onDateRequested(dateText, button);
       });
     }
 

@@ -396,7 +396,7 @@ function renderHome(tasks) {
     { key: "night", label: "Night", icon: "Segmented Control/night.svg", tasks: openTasks.filter(task => task.period === "night") },
   ];
   for (const period of periods) {
-    if (!openTasks.length) break;
+    if (!period.tasks.length) continue;
     const periodAll = todayTasks.filter(task => task.period === period.key);
     const completed = periodAll.filter(task => task.completed).length;
     const total = periodAll.length;
@@ -439,7 +439,7 @@ function renderTaskPage() {
   const tasks = filteredTasks().sort(sortTasks);
   const isToday = taskState.view === "today";
   if (isToday && tasks.length) {
-    const groups = ["day", "night"].map(period => {
+    const groups = ["day", "night"].filter(period => tasks.some(task => task.period === period)).map(period => {
       const periodTasks = tasks.filter(task => task.period === period);
       const group = document.createElement("div"); group.className = "tp-period-group"; group.dataset.period = period;
       const header = document.createElement("div"); header.className = "tp-period-heading";
@@ -458,7 +458,7 @@ function renderTaskPage() {
       moreButton.addEventListener("click", () => openPeriodMenu(period, moreButton));
       progress.append(track, count, moreButton); header.append(name, progress);
       const list = document.createElement("div"); list.className = "tp-period-list";
-      list.append(...(periodTasks.length ? periodTasks.map(task => taskRow(task)) : [emptyState()]));
+      list.append(...periodTasks.map(task => taskRow(task)));
       group.append(header, list);
       return group;
     });

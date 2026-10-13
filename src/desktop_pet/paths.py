@@ -19,8 +19,8 @@ else:
     default_data_dir = PROJECT_ROOT / "data"
 
 ASSETS_DIR = RESOURCE_ROOT / "assets"
-APP_ICON_FILE = ASSETS_DIR / "images" / "app-icon.png"
-JOURNAL_ICON_FILE = ASSETS_DIR / "images" / "Journal_icon.ico"
+APP_ICON_FILE = ASSETS_DIR / "images" / "icons" / "cat_app.ico"
+JOURNAL_ICON_FILE = ASSETS_DIR / "images" / "icons" / "cat_journal.ico"
 WEB_ASSETS_DIR = ASSETS_DIR / "web"
 WEB_DIR = (
     RESOURCE_ROOT / "desktop_pet" / "web"

@@ -8,8 +8,11 @@
 .mood-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; width: 812px; height: 106px; padding: 16px 20px; background: #fff; border: 1px solid var(--border-default); border-radius: 18px; }
 .mood-card h2 { margin: 0; color: var(--text-secondary); font: 400 15px/normal var(--font-editorial); }
 .home-checkin-row { display: flex; align-items: center; gap: 75px; width: 100%; height: 40px; padding: 0 7px; }
-.home-mood-summary { display: flex; align-items: center; gap: 12px; width: 160px; height: 40px; flex: 0 0 160px; padding: 0; background: transparent; text-align: left; }
-.home-mood-icon-shell { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; overflow: hidden; border-radius: 50%; background: color-mix(in srgb, var(--display-mood-color, #b3b3b3) 20%, white); }
+.home-mood-summary { display: flex; align-items: center; gap: 12px; width: 160px; height: 40px; flex: 0 0 160px; padding: 0; background: transparent; text-align: left; transform-origin: left center; transition: transform 220ms cubic-bezier(.22,1,.36,1); }
+.home-mood-summary:hover { transform: scale(1.025); }
+.home-mood-summary .home-mood-copy strong { transition: color 180ms ease; }
+.home-mood-icon-shell { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; overflow: hidden; border-radius: 50%; background: color-mix(in srgb, var(--display-mood-color, #b3b3b3) 20%, white); transition: background-color 180ms ease, transform 220ms cubic-bezier(.22,1,.36,1); }
+.home-mood-summary:hover .home-mood-icon-shell { transform: scale(1.06); }
 .home-mood-copy { display: flex; flex-direction: column; gap: 2px; }
 .home-mood-copy strong { font: 500 16px/19px var(--font-ui); }
 .home-mood-copy small { color: var(--text-secondary); font: 400 12px/13px var(--font-ui); }
@@ -20,17 +23,31 @@
 .home-mood-menu::before, .home-mood-menu::after { position: absolute; left: 63px; width: 0; height: 0; content: ""; border-right: 9px solid transparent; border-left: 9px solid transparent; }
 .home-mood-menu::before { top: -10px; border-bottom: 10px solid #dedbd7; }
 .home-mood-menu::after { top: -8px; border-bottom: 9px solid #fff; }
-.home-mood-menu button { display: flex; align-items: center; gap: 11px; width: 100%; height: 44px; padding: 5px 9px; border-radius: 8px; background: transparent; color: var(--mood-color); font: 500 var(--type-body-size)/normal var(--font-ui); text-align: left; transition: background-color 150ms ease; }
-.home-mood-menu button:hover, .home-mood-menu button:focus-visible { background: var(--mood-fill); outline: none; }
+.home-mood-menu button { display: flex; align-items: center; gap: 11px; width: 100%; height: 44px; padding: 5px 9px; border-radius: 8px; background: transparent; color: var(--mood-color); font: 500 var(--type-body-size)/normal var(--font-ui); text-align: left; transition: transform 180ms cubic-bezier(.22,1,.36,1), background-color 150ms ease; }
+.home-mood-menu button:hover { transform: scale(1.03); background: var(--mood-fill); }
+.home-mood-menu button:focus-visible { background: var(--mood-fill); outline: none; }
 .home-menu-mood-icon { position: relative; display: grid; place-items: center; flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%; background: color-mix(in srgb, var(--mood-color) 13%, white); }
 .home-menu-mood-icon::before { width: 22px; height: 22px; background: var(--mood-color); content: ""; -webkit-mask: var(--mood-icon) center/contain no-repeat; mask: var(--mood-icon) center/contain no-repeat; }
 .home-current-mood-icon { width: 24px; height: 24px; mask: var(--mood-icon) center/contain no-repeat; -webkit-mask: var(--mood-icon) center/contain no-repeat; }
 .home-checkin-divider { flex: 0 0 1px; width: 1px; height: 36px; background: var(--border-default); }
-.home-note-field { display: flex; align-items: center; gap: 10px; flex: 1 1 425px; min-width: 0; height: 40px; padding: 0 16px; overflow: hidden; border: 1px solid #efefef; border-radius: 10px; }
-.home-note-icon-space { flex: 0 0 24px; width: 24px; height: 24px; }
-.home-note-icon-space img { display: block; width: 24px; height: 24px; opacity: .28; }
-.home-note-field input { width: 100%; min-width: 0; padding: 2px 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: 500 var(--type-body-size)/normal var(--font-control); }
+.home-note-field { position: relative; display: flex; align-items: center; gap: 10px; flex: 1 1 425px; min-width: 0; height: 40px; padding: 0 12px; overflow: hidden; border: 1px solid #efefef; border-radius: 10px; transition: transform 180ms cubic-bezier(.22,1,.36,1), border-color 180ms ease; }
+.home-note-field:not(.is-empty):not(.is-editing) { border-color: transparent; cursor: text; }
+.home-note-field:not(.is-editing):hover { z-index: 1; transform: scale(1.05); }
+.home-note-field:not(.is-empty):not(.is-editing):focus-within { border-color: #efefef; }
+.home-note-field [hidden] { display: none; }
+.home-note-edit, .home-note-save { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; padding: 0; border-radius: 6px; background: transparent; transition: opacity 180ms ease, transform 220ms cubic-bezier(.22,1,.36,1), background-color 180ms ease; }
+.home-note-edit { opacity: 0; transform: scale(.85); }
+.home-note-field.is-empty .home-note-edit, .home-note-field:hover .home-note-edit, .home-note-field:focus-within .home-note-edit { opacity: 1; transform: scale(1); }
+.home-note-field.is-editing.has-text .home-note-edit { opacity: 0; pointer-events: none; }
+.home-note-edit img { display: block; width: 24px; height: 24px; opacity: .45; }
+.home-note-save { margin-left: auto; color: var(--text-primary); font: 600 19px/1 var(--font-ui); }
+.home-note-save:hover { transform: scale(1.1); }
+.home-note-display { flex: 1; min-width: 0; overflow: hidden; color: var(--text-primary); font: 500 var(--type-body-size)/normal var(--font-control); text-overflow: ellipsis; white-space: nowrap; }
+.home-note-field.is-empty .home-note-display { color: #b3b3b3; }
+.home-note-field input { flex: 1; width: 100%; min-width: 0; padding: 2px 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: 500 var(--type-body-size)/normal var(--font-control); }
 .home-note-field input::placeholder { color: #b3b3b3; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .home-note-edit, .home-note-save, .home-note-field, .home-mood-menu button { transition: none; } .home-note-field:not(.is-editing):hover, .home-note-save:hover, .home-mood-menu button:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .home-mood-summary, .home-mood-summary .home-mood-copy strong, .home-mood-icon-shell { transition: none; } .home-mood-summary:hover, .home-mood-summary:hover .home-mood-icon-shell { transform: none; } }
 .home-workspace { display: grid; grid-template-columns: 316px 340px; grid-template-rows: 408px; align-items: start; gap: clamp(16px, calc(100% - 700px), 100px); width: 812px; height: 408px; flex: 0 0 408px; margin-left: calc(var(--diary-content-inset) - 26px); padding: 0 22px; }
 .home-panel { min-width: 0; min-height: 0; height: 100%; padding: 20px; background: #fff; border: 1px solid var(--border-default); border-radius: 18px; }
 .task-card { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 20px 7px; }
@@ -69,8 +86,15 @@
 .task-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; justify-content: center; gap: 10px; }
 .task-description { width: 100%; height: 17px; padding: 0; background: transparent; border: 0; outline: 0; font: 500 var(--type-body-size)/normal var(--font-control); }
 .task-copy > .task-meta { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); font: 500 var(--type-meta-size)/normal var(--font-control); white-space: nowrap; }
-.task-label { display: flex; align-items: center; gap: 5px; }
+.task-label { display: flex; align-items: center; gap: 3px; padding: 1px 4px; border-radius: 999px; font-size: 11px; line-height: 14px; }
+.task-label:has(> [data-category="work"]) { background: color-mix(in srgb, var(--task-category-work) 30%, white); }
+.task-label:has(> [data-category="personal"]) { background: color-mix(in srgb, var(--task-category-personal) 30%, white); }
+.task-label:has(> [data-category="learning"]) { background: color-mix(in srgb, var(--task-category-learning) 30%, white); }
+.task-label:has(> [data-priority="low"]) { background: color-mix(in srgb, var(--task-priority-low) 45%, white); }
+.task-label:has(> [data-priority="medium"]) { background: color-mix(in srgb, var(--task-priority-medium) 45%, white); }
+.task-label:has(> [data-priority="high"]) { background: color-mix(in srgb, var(--task-priority-high) 45%, white); }
 .tag-dot { display: inline-block; flex: 0 0 10px; width: 10px; height: 10px; border-radius: 50%; background: var(--task-dot-color, transparent); }
+.task-label > .tag-dot { flex-basis: 7px; width: 7px; height: 7px; }
 .task-delete-button { flex: 0 0 24px; width: 24px; height: 24px; padding: 0; background: transparent; }
 .task-delete-button img { width: 24px; height: 24px; }
 .home-task-menu { position: fixed; z-index: 30; min-width: 96px; padding: 4px; border: 1px solid var(--border-default); border-radius: 8px; background: #fff; box-shadow: 0 4px 12px #00000014; }
@@ -91,12 +115,14 @@
 /* Figma 824:1819 keeps four visible rows on each Mini Calendar page. */
 .mini-calendar-grid > :nth-child(n + 29) { display: none; }
 .mini-calendar-grid > button, .mini-calendar-grid > span { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: #fff; color: var(--text-primary); font: 600 14px/normal var(--font-compact); }
-.mini-calendar-grid > button { transition: background-color 300ms ease-out, color 300ms ease-out, border-color 300ms ease-out; }
+.mini-calendar-grid > button { transition: transform 180ms cubic-bezier(.22,1,.36,1), background-color 300ms ease-out, color 300ms ease-out, border-color 300ms ease-out; }
+.mini-calendar-grid > button:not(:disabled):hover { transform: scale(1.08); }
 .mini-calendar-grid > .mini-outside { color: var(--text-secondary); border: 1px solid var(--border-default); font-weight: 400; }
 .mini-calendar-grid > .mini-empty { visibility: hidden; }
 .mini-calendar-grid > button.mood-history, .mini-calendar-grid > button.mood-today { background: var(--mood-color); }
 .mini-calendar-grid > button:not(.mood-history):not(.mood-today) { border: 1px solid var(--border-default); background: transparent; }
-.mini-calendar-grid > button.mini-future { opacity: 1; }
+.mini-calendar-grid > button.mini-future:not(.mood-history):not(.mood-today) { position: relative; border: 0; background: transparent; opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .mini-calendar-grid > button { transition: none; } .mini-calendar-grid > button:not(:disabled):hover { transform: none; } }
 .upcoming { display: flex; flex-direction: column; gap: 12px; }
 .upcoming h3 { margin: 0 0 1px; color: var(--text-secondary); font: 600 12px/normal var(--font-control); }
 .upcoming p { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--text-secondary); font: 400 12px/normal var(--font-compact); }

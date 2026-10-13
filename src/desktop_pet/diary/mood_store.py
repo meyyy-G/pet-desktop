@@ -61,6 +61,35 @@ class MoodStore:
 
         return moods
 
+    def note_by_date(self, date: str) -> str:
+        path = self._mood_path(date)
+        if not path.exists():
+            return ""
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return ""
+        return str(data.get("mood_note", "")) if isinstance(data, dict) else ""
+
+    def save_note(self, date: str, note: str) -> str:
+        note = note.strip()
+        if len(note) > 25:
+            raise ValueError("Mood note must be 25 characters or fewer")
+        path = self._mood_path(date)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        data = {}
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("Invalid journal data")
+        data["date"] = date
+        if note:
+            data["mood_note"] = note
+        else:
+            data.pop("mood_note", None)
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        return note
+
     def _mood_path(self, date: str) -> Path:
         year, month, _ = date.split("-")
         return self.mood_dir / year / month / f"{date}.json"

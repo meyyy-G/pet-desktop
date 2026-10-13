@@ -52,8 +52,21 @@ def evaluate():
       const popover = document.querySelector('#diary-color-popover');
       const picker = document.querySelector('.diary-color-button');
       if (!editor || !window.qt || !document.querySelector('.nav-item[data-page="diary"]')) return 'wait';
-      document.querySelector('.nav-item[data-page="diary"]').click();
+      if (STAGE !== 4) document.querySelector('.nav-item[data-page="diary"]').click();
       if (STAGE === 0) {
+        editor.textContent = '';
+        editor.dispatchEvent(new Event('input', {bubbles: true}));
+        if (!editor.classList.contains('is-empty') || getComputedStyle(editor, '::before').content === 'none') return 'empty placeholder missing';
+        editor.focus();
+        if (getComputedStyle(editor, '::before').content !== 'none') return 'placeholder overlaps focused caret';
+        editor.textContent = ' ';
+        editor.dispatchEvent(new Event('input', {bubbles: true}));
+        if (editor.classList.contains('is-empty')) return 'whitespace incorrectly treated as empty';
+        editor.textContent = '';
+        editor.dispatchEvent(new Event('input', {bubbles: true}));
+        if (!editor.classList.contains('is-empty') || getComputedStyle(editor, '::before').content !== 'none') return 'placeholder returned while focused';
+        editor.blur();
+        if (getComputedStyle(editor, '::before').content === 'none') return 'placeholder did not return on blur';
         editor.textContent = 'Alpha beta gamma';
         editor.dispatchEvent(new Event('input', {bubbles: true}));
         const range = document.createRange();
@@ -69,7 +82,7 @@ def evaluate():
         })) return 'swatches are missing color or 24px size';
         popover.querySelector('[data-diary-color="#e45a59"]').click();
         if (!popover.hidden || (!editor.innerHTML.includes('e45a59') && !editor.innerHTML.includes('228, 90, 89'))) return 'selected text not red: ' + editor.innerHTML;
-        if (!document.querySelector('#save-status').textContent.includes('Not saved')) return 'color did not mark dirty';
+        if (document.querySelector('#save-status').textContent !== 'Saving...') return 'color did not mark dirty';
         if (!document.querySelector('#diary-word-count').textContent.includes('3 words')) return 'word count changed';
         return 'selected';
       }
@@ -94,27 +107,46 @@ def evaluate():
       if (STAGE === 3) {
         if (!editor.innerHTML.includes('228, 90, 89') || !editor.innerHTML.includes('76, 134, 216')) return 'colors missing after reload: ' + editor.innerHTML;
         document.querySelector('#previous-entry-button').click();
+        const target = new Date('OLD_DATE' + 'T00:00:00');
+        const month = target.toLocaleDateString('en-US', {month: 'long', year: 'numeric'});
+        for (let attempts = 0; document.querySelector('#calendar-title').textContent !== month && attempts < 3; attempts++) {
+          document.querySelector('#prev-month-button').click();
+        }
+        if (document.querySelector('#calendar-title').textContent !== month) return 'calendar did not reach old entry month';
+        const findDay = () => [...document.querySelectorAll('#calendar-grid button.calendar-day')]
+          .find(button => Number(button.textContent) === target.getDate());
+        let dayButton = findDay();
+        if (!dayButton) {
+          document.querySelector('#next-month-button').click();
+          dayButton = findDay();
+        }
+        if (!dayButton) return 'old entry date not visible in calendar';
+        dayButton.click();
         return 'reloaded';
       }
       if (STAGE === 4) {
-        if (!editor.innerText.includes('Old diary') || !editor.innerText.includes('Second line')) return 'old entry missing: ' + editor.innerText;
-        if (editor.innerHTML.includes('&lt;')) return 'old entry escaped incorrectly';
+        const modal = document.querySelector('#diary-recent-dialog');
+        const oldEditor = document.querySelector('#diary-recent-dialog-editor');
+        if (modal.hidden || document.querySelector('.app-shell').dataset.activePage !== 'calendar') return 'history did not stay on calendar: ' + JSON.stringify({hidden: modal.hidden, page: document.querySelector('.app-shell').dataset.activePage, title: document.querySelector('#diary-recent-dialog-title').textContent});
+        if (!oldEditor.innerText.includes('Old diary') || !oldEditor.innerText.includes('Second line')) return 'old entry missing: ' + oldEditor.innerText;
+        if (oldEditor.innerHTML.includes('&lt;')) return 'old entry escaped incorrectly';
+        if (editor.innerText !== 'Alpha beta gammaZ') return 'today editor changed to history';
         const range = document.createRange();
-        range.setStart(editor.firstChild, 0); range.setEnd(editor.firstChild, 3);
+        range.setStart(oldEditor.firstChild, 0); range.setEnd(oldEditor.firstChild, 3);
         const selection = window.getSelection();
         selection.removeAllRanges(); selection.addRange(range);
-        document.querySelector('[data-editor-command="bold"]').click();
-        if (!editor.querySelector('b, strong')) return 'bold command failed';
+        document.querySelector('[data-recent-command="bold"]').click();
+        if (!oldEditor.querySelector('b, strong')) return 'bold command failed';
         document.execCommand('undo');
-        if (editor.querySelector('b, strong')) return 'undo command failed';
+        if (oldEditor.querySelector('b, strong')) return 'undo command failed';
         document.execCommand('redo');
-        if (!editor.querySelector('b, strong')) return 'redo command failed';
-        document.querySelector('.diary-expand-button').click();
-        if (!document.querySelector('.app-shell').classList.contains('diary-editor-expanded')) return 'expand failed';
+        if (!oldEditor.querySelector('b, strong')) return 'redo command failed';
+        document.querySelector('#diary-recent-expand').click();
+        if (!modal.classList.contains('is-expanded')) return 'expand failed';
         return 'old';
       }
       return 'wait';
-    })()""".replace("STAGE", str(stage))
+    })()""".replace("STAGE", str(stage)).replace("OLD_DATE", old_date)
     view.page().runJavaScript(script, checked)
 
 

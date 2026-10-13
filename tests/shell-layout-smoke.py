@@ -68,7 +68,7 @@ CHECK = r"""(() => {
     expect(near(rect(document.querySelector('.tp-header')).left, rect(main).left + 26), 'Task header is not left-aligned');
     expect(near(rect(tabs).left, rect(main).left + 26) && near(rect(tabs).right, rect(main).right - 26), 'Task tabs divider does not have equal side padding');
     expect(near(rect(currentTab).bottom, rect(tabs).bottom - 1), 'Task active underline is detached from the divider');
-    expect(near(rect(document.querySelector('.tp-quick-add')).width, Math.min(800, rect(main).width - 52)), 'Task Quick Add width differs from the design');
+    expect(near(rect(document.querySelector('.tp-quick-add')).width, Math.min(808, rect(main).width - 52)), 'Task Quick Add width differs from the design');
     if (rect(main).width >= 1000) {
       const center = el => (rect(el).left + rect(el).right) / 2;
       expect(near(center(document.querySelector('.tp-quick-add')), center(main)), 'Task Quick Add is not centered in wide windows');
@@ -190,7 +190,7 @@ CHECK = r"""(() => {
     expect(lists.length >= 1 && lists[0].getClientRects().length, 'Task list is missing');
     const todayRows = active.querySelectorAll('#task-page-list .tp-row');
     const periodGroups = active.querySelectorAll('.tp-period-group');
-    expect(todayRows.length ? periodGroups.length === 2 : periodGroups.length === 0 && active.querySelectorAll('#task-page-list .tp-empty-state').length === 1,
+    expect(todayRows.length ? periodGroups.length >= 1 && periodGroups.length <= 2 && [...periodGroups].every(group => group.querySelectorAll('.tp-row').length > 0) : periodGroups.length === 0 && active.querySelectorAll('#task-page-list .tp-empty-state').length === 1,
       'Today empty state or Day/Night groups are wrong');
     const dimensions = ['.tp-header h1', '.tp-tabs', '.tp-quick-add', '.tp-list-frame', '.tp-row, .tp-empty-state'].map(selector => {
       const el = active.querySelector(selector);

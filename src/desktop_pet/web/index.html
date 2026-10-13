@@ -72,7 +72,12 @@
               <button type="button" role="menuitemradio" data-mood="Grateful" style="--mood-color:#ffbd00;--mood-fill:#fff7d9"><span class="home-menu-mood-icon mood-icon" style="--mood-icon:url('./assets/moodcard/greatfull.svg')"></span><span>Grateful</span></button>
             </div>
             <span class="home-checkin-divider" aria-hidden="true"></span>
-            <label class="home-note-field"><span class="home-note-icon-space" aria-hidden="true"><img src="./assets/moodcard/pen.svg" alt="" /></span><input id="home-mood-note" type="text" maxlength="120" placeholder="Add a note... (optional)" /></label>
+            <div class="home-note-field is-empty" id="home-note-field">
+              <button id="home-note-edit" class="home-note-edit" type="button" aria-label="Edit mood note"><img src="./assets/moodcard/pen.svg" alt="" /></button>
+              <span id="home-note-display" class="home-note-display">Add a note...</span>
+              <input id="home-mood-note" type="text" maxlength="25" aria-label="Mood note" placeholder="Add a note..." hidden />
+              <button id="home-note-save" class="home-note-save" type="button" aria-label="Save mood note" hidden>✓</button>
+            </div>
           </div>
         </section>
 
@@ -112,7 +117,10 @@
         </header>
 
         <section class="diary-recent" aria-labelledby="recent-entries-title">
-          <h2 id="recent-entries-title">Recent Entries</h2>
+          <div class="diary-recent-heading">
+            <h2 id="recent-entries-title">Recent Entries</h2>
+            <button id="previous-entry-button" type="button">View all<span class="previous-entry-arrow" aria-hidden="true"><img src="./assets/diary/arrow-right.svg" alt="" /></span></button>
+          </div>
           <div class="diary-recent-list">
             <button class="diary-recent-card" type="button" hidden>
               <span class="diary-recent-card-head"><strong></strong><small></small></span>
@@ -131,18 +139,38 @@
 
         <section class="diary-writing-area" aria-label="Diary editor">
           <div class="diary-editor-card">
+            <div class="diary-prompt-area">
+              <p id="diary-mood-label" hidden>Today’s Mood:</p>
+              <span id="diary-mood-pill" class="diary-mood-pill" hidden><span class="diary-mood-icon" aria-hidden="true"></span><span id="diary-mood-text"></span></span>
+              <p class="diary-prompt">Start with a single sentence. What did you notice today?</p>
+            </div>
+
+            <div class="diary-text-area">
             <div class="diary-toolbar" role="toolbar" aria-label="Text formatting">
-              <button type="button" class="diary-color-button" aria-label="Text color" aria-haspopup="true" aria-expanded="false" aria-controls="diary-color-popover" title="Text color"><span class="diary-color-icon" aria-hidden="true"><img src="./assets/diary/arrow-down.svg" alt="" /></span></button>
-              <button type="button" class="diary-text-button" aria-label="Text style" title="Text style">T</button>
-              <button type="button" data-editor-command="h1">H1</button>
-              <button type="button" data-editor-command="h2">H2</button>
-              <button type="button" data-editor-command="bullet" aria-label="Bulleted list"><img src="./assets/diary/bulleted-list.svg" alt="" /></button>
-              <button type="button" data-editor-command="number" aria-label="Numbered list"><img src="./assets/diary/numbered-list.svg" alt="" /></button>
+              <button type="button" class="diary-history-button" data-editor-command="undo" aria-label="Undo"><img src="./assets/diary/undo-arrow.svg" alt="" /></button>
+              <button type="button" class="diary-history-button" data-editor-command="redo" aria-label="Redo"><img src="./assets/diary/redo-arrow.svg" alt="" /></button>
               <span class="diary-toolbar-divider" aria-hidden="true"></span>
+              <details class="diary-format-menu">
+                <summary aria-label="Paragraph style"><span>paragraph</span><span class="diary-format-chevron" aria-hidden="true"></span></summary>
+                <div class="diary-format-options">
+                  <button type="button" data-editor-command="p">Paragraph</button>
+                  <button type="button" data-editor-command="h1">Heading 1</button>
+                  <button type="button" data-editor-command="h2">Heading 2</button>
+                </div>
+              </details>
+              <span class="diary-toolbar-divider" aria-hidden="true"></span>
+              <details class="diary-font-menu"><summary aria-label="Font family"><span>Inter</span><span class="diary-format-chevron" aria-hidden="true"></span></summary><div class="diary-font-options"><button type="button" data-diary-font="Inter">Inter</button><button type="button" data-diary-font="Geom">Geom</button><button type="button" data-diary-font="Jost">Jost</button></div></details>
+              <span class="diary-toolbar-divider" aria-hidden="true"></span>
+              <button type="button" class="diary-color-button" aria-label="Text color" aria-haspopup="true" aria-expanded="false" aria-controls="diary-color-popover" title="Text color"><span class="diary-color-icon" aria-hidden="true"><img src="./assets/diary/arrow-down.svg" alt="" /></span></button>
               <button type="button" data-editor-command="bold" aria-label="Bold"><b>B</b></button>
               <button type="button" data-editor-command="italic" aria-label="Italic"><img src="./assets/diary/text-italic.svg" alt="" /></button>
               <button type="button" data-editor-command="underline" aria-label="Underline"><img src="./assets/diary/text-underline.svg" alt="" /></button>
-              <button type="button" data-editor-command="link" aria-label="Link"><img src="./assets/diary/link.svg" alt="" /></button>
+              <span class="diary-toolbar-divider" aria-hidden="true"></span>
+              <button type="button" data-editor-command="bullet" aria-label="Bulleted list"><img src="./assets/diary/bulleted-list.svg" alt="" /></button>
+              <button type="button" data-editor-command="number" aria-label="Numbered list"><img src="./assets/diary/numbered-list.svg" alt="" /></button>
+              <button type="button" aria-label="Checklist" disabled><span class="diary-checklist-icon" aria-hidden="true"></span></button>
+              <span class="diary-toolbar-divider" aria-hidden="true"></span>
+              <button type="button" data-editor-command="link" aria-label="Insert image" title="Insert image"><img src="./assets/diary/link.svg" alt="" /></button>
               <span class="diary-toolbar-spacer"></span>
               <button class="diary-expand-button" type="button" aria-label="Expand editor" aria-expanded="false"><img src="./assets/diary/maximize.svg" alt="" /></button>
             </div>
@@ -158,12 +186,6 @@
               <button type="button" data-diary-color="#a272c3" style="--swatch-color:#a272c3" aria-label="Purple" title="Purple"></button>
             </div>
 
-            <div class="diary-prompt-area">
-              <p id="diary-mood-label" hidden>Today’s Mood:</p>
-              <span id="diary-mood-pill" class="diary-mood-pill" hidden><span class="diary-mood-icon" aria-hidden="true"></span><span id="diary-mood-text"></span></span>
-              <p class="diary-prompt">Start with a single sentence. What did you notice today?</p>
-            </div>
-
             <div id="diary-editor" class="diary-editor" role="textbox" aria-label="Diary entry" aria-multiline="true" contenteditable="true" data-placeholder="Start writing your day...">Today felt like a slow unfolding. I woke up early and watched the light move across the floorboards in my room. It was quiet, and for the first time in a while, I didn't feel the immediate rush of tasks waiting for me.
 
 I spent the morning reading by the window. The words felt heavy, but in a good way. It was grounding. I realized that I've been moving so fast lately, I forgot what it's like to just sit.</div>
@@ -171,17 +193,17 @@ I spent the morning reading by the window. The words felt heavy, but in a good w
               <h2>FROM TODAY’S CHAT <span id="diary-saved-chat-count">0</span> SAVED</h2>
               <div id="diary-saved-chat-items"></div>
             </section>
-          </div>
-        </section>
+            </div>
 
         <footer class="diary-footer">
           <div class="diary-stats">
-            <span><i class="diary-stat-dot word-dot"></i><span id="diary-word-count">48 words</span></span>
-            <span><i class="diary-stat-dot save-dot"></i><span id="save-status">Auto saved</span></span>
+            <span><i class="diary-stat-dot word-dot"></i><span id="diary-word-count">0 words</span></span>
+            <span id="diary-save-indicator" hidden><i class="diary-stat-dot save-dot"></i><span id="save-status"></span></span>
           </div>
-          <button id="previous-entry-button" type="button">Previous entries<span class="previous-entry-arrow" aria-hidden="true"><img src="./assets/diary/arrow-right.svg" alt="" /></span></button>
-          <span class="diary-hidden-actions" hidden><button id="discard-button" type="button">Discard</button><button id="save-button" type="button">Save</button></span>
+          <div id="diary-main-actions" class="diary-footer-actions" hidden><button id="save-button" type="button">Save</button><button id="discard-button" type="button">Cancel</button></div>
         </footer>
+          </div>
+        </section>
       </section>
       <section class="page chat-page" id="chat" aria-label="Chat">
         <header class="chat-header">
@@ -228,6 +250,7 @@ I spent the morning reading by the window. The words felt heavy, but in a good w
         </div>
         <div class="tp-quick-add">
           <div class="tp-input"><span class="tp-input-status" style="--tick-icon: url('./assets/task/tick-circle.svg')" aria-hidden="true"><img src="./assets/task/tick-circle.svg" alt="" /></span><input id="task-quick-title" aria-label="New task" placeholder="What needs to be done?" maxlength="60" /></div>
+          <div class="tp-quick-controls">
           <div class="tp-period-select" role="group" aria-label="Time of day">
             <span class="tp-period-slider" aria-hidden="true"></span>
             <button type="button" data-quick-period="day" aria-pressed="true"><i class="tp-period-icon" data-period="day" aria-hidden="true"></i><span>Day</span></button>
@@ -237,6 +260,7 @@ I spent the morning reading by the window. The words felt heavy, but in a good w
             <button id="task-date-select" type="button" aria-haspopup="menu" aria-expanded="false"><img src="./assets/navigation/task.svg" alt="" /><span>Today</span><img class="tp-dropdown" src="./assets/task/arrow-down4.svg" alt="" /></button>
             <button id="task-priority-select" class="tp-priority-select" type="button" aria-haspopup="menu" aria-expanded="false"><img class="tp-priority-placeholder-icon" src="./assets/task/tag.svg" alt="" /><i class="tp-dot tp-priority-selected-dot" data-priority="medium" aria-hidden="true" hidden></i><span>Priority</span><img class="tp-dropdown" src="./assets/task/arrow-down4.svg" alt="" /></button>
             <button id="task-quick-add" type="button" class="tp-add"><span class="tp-add-default">Add<img src="./assets/task/add.svg" alt="" /></span><span class="tp-add-check" aria-hidden="true">✓</span></button>
+          </div>
           </div>
           <p id="task-quick-feedback" class="tp-quick-feedback" role="status" aria-live="polite"></p>
         </div>
@@ -337,30 +361,41 @@ I spent the morning reading by the window. The words felt heavy, but in a good w
       <section class="diary-recent-dialog-mood"><h3>Mood:</h3><div id="diary-recent-dialog-moods" class="diary-recent-dialog-moods" role="group" aria-label="Mood"></div></section>
       <div class="diary-recent-writing-frame">
       <div class="diary-toolbar diary-recent-toolbar" role="toolbar" aria-label="Text formatting">
-        <button type="button" class="diary-recent-color" aria-label="Text color" title="Text color"><span class="diary-color-icon"><img src="./assets/diary/arrow-down.svg" alt="" /></span></button>
-        <button type="button" class="diary-text-button" data-recent-command="text" aria-label="Text style">T</button>
-        <button type="button" data-recent-command="h1">H1</button><button type="button" data-recent-command="h2">H2</button>
-        <button type="button" data-recent-command="bullet" aria-label="Bulleted list"><img src="./assets/diary/bulleted-list.svg" alt="" /></button>
-        <button type="button" data-recent-command="number" aria-label="Numbered list"><img src="./assets/diary/numbered-list.svg" alt="" /></button>
+        <button type="button" class="diary-history-button" data-recent-command="undo" aria-label="Undo"><img src="./assets/diary/undo-arrow.svg" alt="" /></button>
+        <button type="button" class="diary-history-button" data-recent-command="redo" aria-label="Redo"><img src="./assets/diary/redo-arrow.svg" alt="" /></button>
         <span class="diary-toolbar-divider" aria-hidden="true"></span>
+        <details class="diary-format-menu">
+          <summary aria-label="Paragraph style"><span>paragraph</span><span class="diary-format-chevron" aria-hidden="true"></span></summary>
+          <div class="diary-format-options">
+            <button type="button" data-recent-command="p">Paragraph</button>
+            <button type="button" data-recent-command="h1">Heading 1</button>
+            <button type="button" data-recent-command="h2">Heading 2</button>
+          </div>
+        </details>
+        <span class="diary-toolbar-divider" aria-hidden="true"></span>
+        <details class="diary-font-menu"><summary aria-label="Font family"><span>Inter</span><span class="diary-format-chevron" aria-hidden="true"></span></summary><div class="diary-font-options"><button type="button" data-diary-font="Inter">Inter</button><button type="button" data-diary-font="Geom">Geom</button><button type="button" data-diary-font="Jost">Jost</button></div></details>
+        <span class="diary-toolbar-divider" aria-hidden="true"></span>
+        <button type="button" class="diary-recent-color" aria-label="Text color" title="Text color"><span class="diary-color-icon"><img src="./assets/diary/arrow-down.svg" alt="" /></span></button>
         <button type="button" data-recent-command="bold" aria-label="Bold"><b>B</b></button>
         <button type="button" data-recent-command="italic" aria-label="Italic"><img src="./assets/diary/text-italic.svg" alt="" /></button>
         <button type="button" data-recent-command="underline" aria-label="Underline"><img src="./assets/diary/text-underline.svg" alt="" /></button>
-        <button type="button" data-recent-command="link" aria-label="Link"><img src="./assets/diary/link.svg" alt="" /></button>
+        <span class="diary-toolbar-divider" aria-hidden="true"></span>
+        <button type="button" data-recent-command="bullet" aria-label="Bulleted list"><img src="./assets/diary/bulleted-list.svg" alt="" /></button>
+        <button type="button" data-recent-command="number" aria-label="Numbered list"><img src="./assets/diary/numbered-list.svg" alt="" /></button>
+        <button type="button" aria-label="Checklist" disabled><span class="diary-checklist-icon" aria-hidden="true"></span></button>
+        <span class="diary-toolbar-divider" aria-hidden="true"></span>
+        <button type="button" data-recent-command="link" aria-label="Insert image" title="Insert image"><img src="./assets/diary/link.svg" alt="" /></button>
         <span class="diary-toolbar-spacer"></span>
         <button id="diary-recent-expand" type="button" aria-label="Expand entry"><img src="./assets/diary/maximize.svg" alt="" /></button>
       </div>
       <div id="diary-recent-color-popover" class="diary-color-popover" role="group" aria-label="Text color" hidden></div>
       <div id="diary-recent-dialog-editor" class="diary-recent-dialog-editor diary-editor" role="textbox" aria-label="Diary entry" aria-multiline="true" contenteditable="true"></div>
       </div>
-      <footer class="diary-recent-dialog-footer"><span id="diary-recent-dialog-edited"></span><div><button id="diary-recent-dialog-save" type="button">Save</button><button id="diary-recent-dialog-cancel" type="button">Cancel</button></div></footer>
+      <footer class="diary-recent-dialog-footer"><span id="diary-recent-dialog-edited"></span><div class="diary-footer-actions"><button id="diary-recent-dialog-save" type="button">Save</button><button id="diary-recent-dialog-cancel" type="button">Cancel</button></div></footer>
     </div>
   </div>
   <div id="diary-recent-delete-confirm" class="diary-recent-backdrop" role="alertdialog" aria-modal="true" aria-label="Delete diary entry" hidden>
     <div class="diary-recent-confirm"><p>Delete this diary entry’s text? Its Mood will be kept.</p><div><button id="diary-recent-delete-cancel" type="button">Cancel</button><button id="diary-recent-delete-approve" type="button">Delete</button></div></div>
-  </div>
-  <div id="unsaved-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="unsaved-title">
-    <div class="modal"><p>UNSAVED CHANGES</p><h2 id="unsaved-title">Save this entry?</h2><span>You have changes that are not saved yet. Save them before opening another date?</span><div><button id="modal-cancel-button" type="button">Cancel</button><button id="modal-discard-button" type="button">Discard</button><button id="modal-save-button" type="button">Save</button></div></div>
   </div>
   <div id="future-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="future-title">
     <div class="modal"><p>NOT YET</p><h2 id="future-title">还未到该日期</h2><span>等到这一天来写吧。今天先记录现在发生的事。</span><div><button id="future-ok-button" type="button">OK</button></div></div>

@@ -6,8 +6,8 @@ src_dir = project_root / "src"
 
 datas = [
     (str(project_root / "assets" / "animations"), "assets/animations"),
-    (str(project_root / "assets" / "images" / "app-icon.png"), "assets/images"),
-    (str(project_root / "assets" / "images" / "Journal_icon.ico"), "assets/images"),
+    (str(project_root / "assets" / "images" / "icons" / "cat_app.ico"), "assets/images/icons"),
+    (str(project_root / "assets" / "images" / "icons" / "cat_journal.ico"), "assets/images/icons"),
     (str(project_root / "assets" / "web"), "assets/web"),
     (str(src_dir / "desktop_pet" / "web"), "desktop_pet/web"),
 ]
@@ -108,7 +108,7 @@ exe = EXE(
     a.datas,
     [],
     name="DesktopPet",
-    icon=str(project_root / "assets" / "images" / "app-icon.ico"),
+    icon=str(project_root / "assets" / "images" / "icons" / "cat_app.ico"),
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

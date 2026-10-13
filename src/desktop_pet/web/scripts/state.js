@@ -60,7 +60,6 @@ export const state = {
   calendarPage: Math.floor((new Date(today.getFullYear(), today.getMonth(), 1).getDay() + today.getDate() - 1) / 35),
   miniVisibleMonth: new Date(today.getFullYear(), today.getMonth(), 1),
   miniCalendarPage: Math.floor((new Date(today.getFullYear(), today.getMonth(), 1).getDay() + today.getDate() - 1) / 28),
-  pendingDateText: null,
   recordedDates: new Set(),
   recordedMoods: {},
   selectedMiniDate: toDateText(new Date()),

@@ -13,8 +13,9 @@
 .chat-message-text p { flex: 1; min-width: 0; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font: 400 18px/normal var(--font-ui); }
 .chat-message-assistant .chat-message-text p { font: 400 18px/normal var(--font-display); letter-spacing: 0; }
 .chat-bookmark, .chat-bookmark img { display: block; width: 24px; height: 24px; flex: 0 0 24px; }
-.chat-bookmark { position: relative; padding: 0; border: 0; background: transparent; opacity: 0; transition: opacity 180ms ease; }
+.chat-bookmark { position: relative; padding: 0; border: 0; border-radius: 6px; background: transparent; opacity: 0; transition: opacity 180ms ease, transform 180ms cubic-bezier(.22,1,.36,1), background-color 180ms ease; }
 .chat-message-assistant:hover .chat-bookmark, .chat-message-assistant:focus-within .chat-bookmark, .chat-bookmark.is-saved { opacity: 1; }
+.chat-bookmark:hover { transform: scale(1.08); }
 .chat-bookmark img { position: absolute; inset: 0; transition: opacity 180ms ease; }
 .chat-bookmark .chat-bookmark-saved { opacity: 0; }
 .chat-bookmark.is-saved .chat-bookmark-default { opacity: 0; }
@@ -22,7 +23,7 @@
 .chat-bookmark:focus-visible { outline: 2px solid var(--text-secondary); outline-offset: 3px; border-radius: 3px; }
 .chat-save-status { max-height: 0; margin: 0; overflow: hidden; opacity: 0; transform: translateY(-4px); color: var(--text-secondary); font: 400 12px/1.4 var(--font-ui); transition: opacity 250ms ease, transform 250ms ease, max-height 250ms ease, margin 250ms ease; }
 .chat-save-status.is-visible { max-height: 40px; margin: 6px 0 0; opacity: 1; transform: translateY(0); }
-@media (prefers-reduced-motion: reduce) { .chat-bookmark, .chat-bookmark img, .chat-save-status { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .chat-bookmark, .chat-bookmark img, .chat-save-status { transition: none; } .chat-bookmark:hover { transform: none; } }
 .chat-message time { color: var(--text-secondary); font: 400 12px/15px var(--font-ui); }
 .chat-message-user { justify-content: flex-end; }
 .chat-compose-form { display: flex; align-items: flex-end; gap: 10px; width: 100%; padding: 0 2px; margin-top: 22px; flex-shrink: 0; }
