@@ -29,7 +29,7 @@
 .diary-recent-card-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: flex-start; justify-content: space-between; width: 100%; }
 .diary-recent-card-head strong { font: 600 14px/normal var(--font-display); }
 .diary-recent-card-head small { color: #b7adad; font: 400 12px/normal var(--font-display); }
-.diary-recent-excerpt { width: 100%; overflow: hidden; color: var(--text-secondary); font: 400 14px/normal var(--font-ui); }
+.diary-recent-excerpt { display: -webkit-box; width: 100%; overflow: hidden; color: var(--text-secondary); font: 400 14px/20px var(--font-ui); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .diary-recent-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; background: rgba(22, 20, 18, .28); }
 .diary-recent-backdrop[hidden] { display: none; }
 .diary-recent-dialog { position: relative; display: flex; flex-direction: column; gap: 12px; width: min(870px, 100%); height: min(600px, calc(100vh - 56px)); padding: 16px 14px 8px; overflow: hidden; background: #fffdfc; border: 1px solid #faf7f5; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,.08); }

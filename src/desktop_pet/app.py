@@ -18,6 +18,9 @@ def main() -> int:
     window = PetWindow()
     window.show()
 
+    tray_icon = None
+    tray_menu = None
+
     if QSystemTrayIcon.isSystemTrayAvailable():
         tray_menu = QMenu()
         open_diary_action = tray_menu.addAction("打开今日手帐")
@@ -35,6 +38,17 @@ def main() -> int:
             else None
         )
         tray_icon.show()
+
+    def cleanup_tray_icon() -> None:
+        """Explicitly unregister the icon before Windows destroys the app."""
+        if tray_icon is None:
+            return
+
+        tray_icon.hide()
+        tray_icon.setContextMenu(None)
+        tray_icon.deleteLater()
+
+    app.aboutToQuit.connect(cleanup_tray_icon)
 
     return app.exec()
 

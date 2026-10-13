@@ -49,7 +49,9 @@ function getTimeLabel(createdAt) {
 }
 
 function createMessage(record) {
-  const { content: text, role } = record;
+  const { role } = record;
+  const text = role === "assistant" && record.content === greeting.replace("Mey.", "Emma.")
+    ? greeting : record.content;
   const message = document.createElement("article");
   message.className = `chat-message chat-message-${role}`;
   message.dataset.messageId = record.id;
