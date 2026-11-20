@@ -1,6 +1,8 @@
 import { dom } from "../dom.js";
 import { renderCalendar } from "./calendar.js";
 import { calendarMoodColors, getDayPeriod, isFutureDate, moodColors, state, toDateText } from "../state.js";
+import { moodBackground } from "../mood-palette.js";
+import { getDisplayName } from "./profile.js";
 
 // 首页模块：只负责首页日期和问候语。
 const shortWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -13,11 +15,41 @@ const months = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+function selectHomeDate(dateText) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText) || isFutureDate(dateText)) return;
+  const selected = new Date(`${dateText}T00:00:00`);
+  if (Number.isNaN(selected.getTime()) || toDateText(selected) !== dateText) return;
+  state.selectedMiniDate = dateText;
+  state.miniVisibleMonth = new Date(selected.getFullYear(), selected.getMonth(), 1);
+  state.miniCalendarPage = Math.floor((selected.getDate() + state.miniVisibleMonth.getDay() - 1) / 28);
+  renderMiniCalendar();
+  loadHomeNote();
+  animateMiniMoodSelection();
+}
+
+export function bindHomeHeaderEvents() {
+  document.querySelector("#home-today-button")?.addEventListener("click", () => selectHomeDate(toDateText(new Date())));
+  document.querySelector("#home-sidebar-toggle")?.addEventListener("click", event => {
+    const hidden = document.querySelector(".home-main-layout").classList.toggle("is-sidebar-hidden");
+    event.currentTarget.setAttribute("aria-expanded", String(!hidden));
+    event.currentTarget.setAttribute("aria-label", hidden ? "Show Home sidebar" : "Hide Home sidebar");
+  });
+  document.querySelector("#home-focus-toggle")?.addEventListener("click", event => {
+    const button = event.currentTarget;
+    const active = button.getAttribute("aria-pressed") !== "true";
+    button.setAttribute("aria-pressed", String(active));
+    button.setAttribute("aria-label", active ? "Pause focus" : "Start focus");
+    button.querySelector("img").src = `${document.body.dataset.svgBase}sidebar/${active ? "pause-circle.svg" : "play-circle.svg"}`;
+  });
+}
+
 /** 更新左侧栏显示的当天日期。 */
 export function updateCurrentTime() {
   const today = new Date();
   if (dom.todayNumber) dom.todayNumber.textContent = String(today.getDate());
   if (dom.todayLabel) dom.todayLabel.textContent = `${shortWeekdays[today.getDay()]}·${months[today.getMonth()]}`;
+  const summaryDate = document.querySelector("#home-summary-date");
+  if (summaryDate) summaryDate.textContent = today.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
 }
 
 /** 根据当前星期更新侧栏底部一周的过去、今天和未来状态。 */
@@ -46,20 +78,8 @@ export function updateHomeHeader() {
   const today = new Date();
   const period = getDayPeriod(today.getHours());
 
-  if (dom.homeGreeting) dom.homeGreeting.textContent = `Good ${period}, Mey.`;
+  if (dom.homeGreeting) dom.homeGreeting.textContent = `Good ${period}, ${getDisplayName()}.`;
   if (dom.homeDateLine) dom.homeDateLine.textContent = `${weekdays[today.getDay()]}, ${months[today.getMonth()]} ${today.getDate()} · A good day to check in with yourself.`;
-}
-
-/** Toggle the sidebar focus control between its inactive and active icons. */
-export function bindFocusToggle() {
-  dom.focusToggle?.addEventListener("click", () => {
-    const active = dom.focusToggle.getAttribute("aria-pressed") !== "true";
-    dom.focusToggle.setAttribute("aria-pressed", String(active));
-    dom.focusToggle.setAttribute("aria-label", active ? "Stop focus" : "Start focus");
-    dom.focusToggle.querySelector("img").src = active
-      ? dom.focusToggle.dataset.activeSrc
-      : dom.focusToggle.dataset.inactiveSrc;
-  });
 }
 
 // 首页中的心情模块：负责心情按钮、提示文字和首页迷你日历。
@@ -100,8 +120,10 @@ function applyMoodDisplay(element, mood) {
   element.classList.toggle("has-mood", Boolean(color));
   if (color) {
     element.style.setProperty("--display-mood-color", color);
+    element.style.setProperty("--display-mood-background", moodBackground(mood));
   } else {
     element.style.removeProperty("--display-mood-color");
+    element.style.removeProperty("--display-mood-background");
   }
 }
 
@@ -109,12 +131,11 @@ export function renderMoodDisplays() {
   const diaryMood = state.recordedMoods[toDateText(state.currentDate)];
   const todayMood = state.recordedMoods[toDateText(new Date())];
 
-  if (dom.diaryMoodLabel) dom.diaryMoodLabel.hidden = !diaryMood;
   if (dom.diaryMoodPill) {
-    dom.diaryMoodPill.hidden = !diaryMood;
+    dom.diaryMoodPill.hidden = false;
     dom.diaryMoodPill.dataset.mood = diaryMood || "";
   }
-  if (dom.diaryMoodText) dom.diaryMoodText.textContent = diaryMood || "";
+  if (dom.diaryMoodText) dom.diaryMoodText.textContent = diaryMood || "Not set";
   const diaryMoodIcon = dom.diaryMoodPill?.querySelector(".diary-mood-icon");
   if (diaryMoodIcon) {
     diaryMoodIcon.hidden = !diaryMood;
@@ -123,25 +144,15 @@ export function renderMoodDisplays() {
     }
   }
   applyMoodDisplay(dom.diaryMoodPill, diaryMood);
-  const matchingMoodButton = [...(dom.moodButtons || [])].find(button => button.dataset.mood === diaryMood);
-  if (dom.diaryMoodPill && matchingMoodButton && typeof getComputedStyle === "function") {
-    dom.diaryMoodPill.style.setProperty("--display-mood-color", getComputedStyle(matchingMoodButton).color);
+  const summaryMood = document.querySelector("#home-summary-mood");
+  if (summaryMood) {
+    const iconFile = todayMood && moodIconFiles[todayMood];
+    summaryMood.querySelector("strong").textContent = todayMood || "Not set";
+    summaryMood.style.setProperty("--summary-mood-fill", moodBackground(todayMood) || "#f2f2f7");
+    summaryMood.style.setProperty("--summary-mood-color", moodColors[todayMood] || "#b3b3b3");
+    summaryMood.style.setProperty("--summary-mood-icon", iconFile ? `url("${document.body.dataset.svgBase}moodcard/${iconFile}")` : "none");
   }
 
-  if (dom.snapshotMoodName) dom.snapshotMoodName.textContent = todayMood || "Not set";
-  if (dom.snapshotMoodDetail) {
-    dom.snapshotMoodDetail.textContent = moodDetails[todayMood] || "No check-in yet";
-  }
-  if (dom.snapshotMoodDot) {
-    dom.snapshotMoodDot.hidden = !todayMood;
-    if (todayMood) {
-      dom.snapshotMoodDot.style.setProperty(
-        "--mood-icon",
-        `url("${document.body.dataset.svgBase}moodcard/${moodIconFiles[todayMood]}")`,
-      );
-    }
-  }
-  applyMoodDisplay(dom.snapshotMoodDot, todayMood);
 }
 
 function showMoodTooltip(button) {
@@ -189,17 +200,17 @@ function updateMoodButtonState() {
     if (selectedMood) {
       dom.homeMoodIcon.style.setProperty("--mood-icon", `url("${document.body.dataset.svgBase}moodcard/${moodIconFiles[selectedMood]}")`);
       dom.homeMoodIcon.style.background = moodColors[selectedMood];
-      dom.homeMoodIcon.closest(".home-mood-icon-shell")?.style.setProperty("--display-mood-color", moodColors[selectedMood]);
+      dom.homeMoodIcon.closest(".home-mood-icon-shell")?.style.setProperty("--display-mood-background", moodBackground(selectedMood));
+    } else {
+      dom.homeMoodIcon.closest(".home-mood-icon-shell")?.style.removeProperty("--display-mood-background");
     }
   }
   dom.moodButtons.forEach((button) => {
     button.classList.toggle("selected", button.dataset.mood === selectedMood);
     if (button.dataset.mood === selectedMood && dom.homeMoodIcon) {
       const icon = button.querySelector(".mood-icon");
-      const displayColor = typeof getComputedStyle === "function" ? getComputedStyle(button).color : moodColors[selectedMood];
       dom.homeMoodIcon.style.setProperty("--mood-icon", icon.style.getPropertyValue("--mood-icon"));
-      dom.homeMoodIcon.style.background = displayColor;
-      if (dom.homeMoodName) dom.homeMoodName.style.color = isToday ? "" : displayColor;
+      dom.homeMoodIcon.style.background = moodColors[selectedMood];
     }
   });
   if (dom.homeMoodName) dom.homeMoodName.style.color = "";
@@ -252,7 +263,7 @@ function showHomeNote(note) {
   const value = String(note || "");
   dom.homeNoteField.classList.toggle("is-empty", !value);
   dom.homeNoteField.classList.remove("is-editing", "has-text");
-  dom.homeNoteDisplay.textContent = value || "Add a note...";
+  dom.homeNoteDisplay.textContent = value || "Add a note... (optional)";
   dom.homeNoteDisplay.hidden = false;
   dom.homeMoodNote.hidden = true;
   dom.homeNoteSave.hidden = true;
@@ -295,6 +306,7 @@ function saveHomeNote() {
     dom.homeNoteSave.disabled = false;
     homeNoteValues.set(date, String(saved || ""));
     homeNoteDrafts.delete(date);
+    renderCalendar();
     if (state.selectedMiniDate === date) {
       dom.homeNoteSave.blur();
       showHomeNote(saved);
@@ -307,7 +319,7 @@ export function renderMiniCalendar() {
 
   const today = new Date();
   const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  if (state.miniVisibleMonth.getTime() !== currentMonth.getTime()) {
+  if (!(state.miniVisibleMonth instanceof Date) || Number.isNaN(state.miniVisibleMonth.getTime())) {
     state.miniVisibleMonth = currentMonth;
     state.miniCalendarPage = Math.floor((currentMonth.getDay() + today.getDate() - 1) / 28);
     state.selectedMiniDate = toDateText(today);
@@ -380,6 +392,13 @@ export function renderMiniCalendar() {
   syncMiniCalendarSelection();
   updateMoodButtonState();
   renderMoodDisplays();
+  const moodCounts = Object.entries(state.recordedMoods).filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`)).reduce((counts, [, mood]) => { counts[mood] = (counts[mood] || 0) + 1; return counts; }, {});
+  const moodValue = document.querySelector("#home-monthly-mood-value");
+  if (moodValue) {
+    const sorted = Object.entries(moodCounts).sort((a, b) => b[1] - a[1]);
+    const total = sorted.reduce((sum, [, count]) => sum + count, 0);
+    moodValue.textContent = sorted.length ? `${sorted[0][0]}: ${Math.round(sorted[0][1] / total * 100)}%` : "No mood yet";
+  }
 }
 
 export function loadRecordedMoods() {
@@ -394,6 +413,11 @@ export function loadRecordedMoods() {
 
 // 注册心情按钮的提示和保存事件。
 export function bindMoodEvents() {
+  window.addEventListener("calendar:mood-changed", () => {
+    renderMiniCalendar();
+    loadHomeNote();
+  });
+  window.addEventListener("home:mood-note-changed", loadHomeNote);
   dom.homeNoteField?.addEventListener("click", (event) => {
     if (event.target.closest("#home-note-save") || dom.homeNoteField.classList.contains("is-editing")) return;
     editHomeNote(homeNoteDrafts.get(state.selectedMiniDate));

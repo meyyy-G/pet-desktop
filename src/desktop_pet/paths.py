@@ -20,7 +20,7 @@ else:
 
 ASSETS_DIR = RESOURCE_ROOT / "assets"
 APP_ICON_FILE = ASSETS_DIR / "images" / "icons" / "cat_app.ico"
-JOURNAL_ICON_FILE = ASSETS_DIR / "images" / "icons" / "cat_journal.ico"
+JOURNAL_ICON_FILE = ASSETS_DIR / "images" / "icons" / "Journal.png"
 WEB_ASSETS_DIR = ASSETS_DIR / "web"
 WEB_DIR = (
     RESOURCE_ROOT / "desktop_pet" / "web"

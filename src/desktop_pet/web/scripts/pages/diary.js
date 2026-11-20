@@ -1,9 +1,11 @@
 import { dom } from "../dom.js";
 import { state, toDateText } from "../state.js";
+import { moodColors } from "../mood-palette.js";
 import { showPage } from "../navigation.js";
 import { renderCalendar } from "./calendar.js";
 import { renderMoodDisplays } from "./home.js";
-import { DIARY_COLORS, DIARY_FONTS, allowedDiaryColor, diaryPayload, diaryPlainText, showDiaryContent, updateDiaryPlaceholder, applyDiaryCommand, applyDiaryColor, applyDiaryFont, insertDiaryImage } from "./diary-rich-text.js";
+import { DIARY_COLORS, DIARY_FONTS, allowedDiaryColor, diaryPayload, diaryPlainText, countDiaryWords, showDiaryContent, updateDiaryPlaceholder, applyDiaryCommand, applyDiaryColor, applyDiaryFont, insertDiaryImage } from "./diary-rich-text.js";
+import { bindDiaryAddEntry } from "./diary-add-entry.js";
 
 // 弹窗模块：只控制弹窗显示、隐藏及其关联的待处理日期。
 
@@ -114,19 +116,245 @@ function persistMainEntry() {
 
 function setMainEditing(editing) {
   if (dom.diaryMainActions) dom.diaryMainActions.hidden = !editing;
+  for (const id of ["#diary-visual-save", "#diary-visual-cancel"]) {
+    const button = document.querySelector(id);
+    if (button) button.hidden = !editing;
+  }
 }
 
 function leaveMainEditingIfOutside(target) {
   if (dom.diaryMainActions?.hidden) return;
-  if (dom.diaryEditor.contains(target) || target?.closest?.(".diary-writing-area .diary-toolbar, #diary-color-popover, #diary-main-actions")) return;
+  if (dom.diaryEditor.contains(target) || target?.closest?.(".diary-writing-area .diary-toolbar, .diary-focus-control, #diary-color-popover, #diary-main-actions")) return;
   setMainEditing(false);
   if (!state.hasUnsavedChanges) setStatus(mainSavedStatus);
 }
 
 function updateWordCount() {
-  const text = diaryPlainText(dom.diaryEditor).trim();
-  const count = text ? text.split(/\s+/).length : 0;
-  if (dom.diaryWordCount) dom.diaryWordCount.textContent = `${count} ${count === 1 ? "word" : "words"}`;
+  const count = countDiaryWords(diaryPlainText(dom.diaryEditor));
+  const label = `${count} ${count === 1 ? "word" : "words"}`;
+  if (dom.diaryWordCount) dom.diaryWordCount.textContent = label;
+  const toolbarCount = document.querySelector("#diary-toolbar-count");
+  if (toolbarCount) toolbarCount.textContent = label;
+}
+
+let timelineOffset = 0;
+let timelineRequestId = 0;
+let suppressTimelineClick = false;
+const timelinePreviewCache = new Map();
+const timelinePreviewPending = new Map();
+function timelineDateAt(index) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + index - 3 + timelineOffset);
+  return date;
+}
+function centerTimelineOn(dateText) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  timelineOffset = Math.round((new Date(`${dateText}T00:00:00`) - today) / 86400000);
+}
+function timelineStep() {
+  const tiles = document.querySelectorAll("#diary-timeline-days .diary-timeline-day");
+  return tiles.length > 1 ? tiles[1].getBoundingClientRect().left - tiles[0].getBoundingClientRect().left : 120;
+}
+function renderDiaryTimeline() {
+  const strip = document.querySelector("#diary-timeline-days");
+  if (!strip) return;
+  strip.replaceChildren();
+  const track = document.querySelector(".diary-timeline-track");
+  track?.replaceChildren();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let index = 0; index < 7; index += 1) {
+    const date = timelineDateAt(index);
+    const dateText = toDateText(date);
+    const isSelected = index === 3;
+    const isCommitted = dateText === toDateText(state.currentDate);
+    const tile = document.createElement("button");
+    tile.type = "button";
+    tile.className = "diary-timeline-day";
+    tile.dataset.date = dateText;
+    if (isSelected) tile.classList.add("is-selected");
+    if (isSelected && !isCommitted) tile.classList.add("is-preview");
+    if (dateText > toDateText(today)) tile.classList.add("is-future");
+    tile.setAttribute("aria-label", date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }));
+    tile.setAttribute("aria-pressed", String(isSelected && isCommitted));
+    tile.addEventListener("click", () => {
+      if (suppressTimelineClick) return;
+      if (dateText > toDateText(new Date())) return showFutureDateMessage();
+      openTimelineDate(dateText);
+    });
+    const weekday = document.createElement("span");
+    weekday.className = "diary-timeline-weekday";
+    weekday.textContent = date.toLocaleDateString("en-US", { weekday: "short" });
+    const day = document.createElement("strong");
+    day.textContent = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const preview = document.createElement("span");
+    preview.className = "diary-timeline-preview";
+    preview.textContent = dateText > toDateText(today) ? "" : "+ New entry";
+    const dot = document.createElement("i");
+    dot.className = "diary-timeline-dot";
+    tile.append(weekday, day, preview, dot);
+    strip.append(tile);
+    const marker = document.createElement("button");
+    marker.type = "button";
+    marker.className = "diary-timeline-marker";
+    marker.dataset.date = dateText;
+    marker.setAttribute("aria-label", `Open diary for ${tile.getAttribute("aria-label")}`);
+    if (isSelected) marker.classList.add("is-selected");
+    if (dateText > toDateText(today)) marker.disabled = true;
+    marker.addEventListener("click", () => {
+      if (!suppressTimelineClick) openTimelineDate(dateText);
+    });
+    track?.append(marker);
+    if (dateText === toDateText(state.currentDate)) {
+      const text = diaryPlainText(dom.diaryEditor).trim();
+      if (text) preview.textContent = text;
+    } else if (dateText <= toDateText(today) && state.diaryBridge?.peekEntryByDate) {
+      if (timelinePreviewCache.has(dateText)) {
+        preview.textContent = timelinePreviewCache.get(dateText) || "+ New entry";
+      } else if (timelinePreviewPending.has(dateText)) {
+        timelinePreviewPending.get(dateText).push(preview);
+      } else {
+        timelinePreviewPending.set(dateText, [preview]);
+        state.diaryBridge.peekEntryByDate(dateText, entry => {
+          const text = String(entry?.text || "").trim();
+          timelinePreviewCache.set(dateText, text);
+          for (const pendingPreview of timelinePreviewPending.get(dateText) || []) {
+            if (pendingPreview.isConnected) pendingPreview.textContent = text || "+ New entry";
+          }
+          timelinePreviewPending.delete(dateText);
+        });
+      }
+    }
+    const mood = state.recordedMoods?.[dateText];
+    if (mood) {
+      const color = moodColors[mood] || "#bfbfbf";
+      tile.style.setProperty("--timeline-dot", color);
+      marker.style.setProperty("--timeline-dot", color);
+    }
+  }
+}
+
+function bindTimelineDragging() {
+  const strip = document.querySelector("#diary-timeline-days");
+  const track = document.querySelector(".diary-timeline-track");
+  if (!strip || !track) return;
+  let cardDrag = null;
+  strip.addEventListener("pointerdown", event => {
+    if (event.button !== 0) return;
+    cardDrag = { id: event.pointerId, x: event.clientX, moved: false };
+  });
+  strip.addEventListener("pointermove", event => {
+    if (!cardDrag || event.pointerId !== cardDrag.id) return;
+    let dx = event.clientX - cardDrag.x;
+    if (Math.abs(dx) > 5 && !cardDrag.moved) {
+      cardDrag.moved = true;
+      strip.setPointerCapture(event.pointerId);
+    }
+    if (!cardDrag.moved) return;
+    const step = timelineStep();
+    const passed = Math.round(dx / step);
+    if (passed) {
+      timelineOffset -= passed;
+      cardDrag.x += passed * step;
+      renderDiaryTimeline();
+      dx = event.clientX - cardDrag.x;
+    }
+    strip.classList.add("is-dragging");
+    for (const tile of strip.children) tile.style.transform = `translateX(${dx}px)`;
+  });
+  const finishCards = event => {
+    if (!cardDrag || event.pointerId !== cardDrag.id) return;
+    const dx = event.clientX - cardDrag.x;
+    if (cardDrag.moved) {
+      suppressTimelineClick = true;
+      timelineOffset -= Math.round(dx / timelineStep());
+      renderDiaryTimeline();
+      const date = toDateText(timelineDateAt(3));
+      if (date <= toDateText(new Date())) openTimelineDate(date);
+      else showFutureDateMessage();
+      setTimeout(() => { suppressTimelineClick = false; }, 0);
+    }
+    strip.classList.remove("is-dragging");
+    cardDrag = null;
+  };
+  strip.addEventListener("pointerup", finishCards);
+  strip.addEventListener("pointercancel", finishCards);
+
+  let handleDrag = null;
+  let edgeTimer = null;
+  track.addEventListener("pointerdown", event => {
+    if (event.button !== 0 || !event.target.closest(".diary-timeline-marker.is-selected")) return;
+    handleDrag = { id: event.pointerId, x: event.clientX, moved: false };
+  });
+  track.addEventListener("pointermove", event => {
+    if (!handleDrag || event.pointerId !== handleDrag.id) return;
+    if (Math.abs(event.clientX - handleDrag.x) > 5 && !handleDrag.moved) {
+      handleDrag.moved = true;
+      track.setPointerCapture(event.pointerId);
+    }
+    if (!handleDrag.moved) return;
+    let dx = event.clientX - handleDrag.x;
+    const step = timelineStep();
+    const passed = Math.round(dx / step);
+    if (passed) {
+      timelineOffset -= passed;
+      handleDrag.x += passed * step;
+      renderDiaryTimeline();
+      dx = event.clientX - handleDrag.x;
+    }
+    track.classList.add("is-dragging");
+    for (const tile of strip.children) tile.style.transform = `translateX(${dx}px)`;
+    const bounds = track.getBoundingClientRect();
+    const direction = event.clientX < bounds.left + 40 ? -1 : event.clientX > bounds.right - 40 ? 1 : 0;
+    clearInterval(edgeTimer);
+    edgeTimer = null;
+    if (direction) {
+      edgeTimer = setInterval(() => {
+        timelineOffset += direction * 7;
+        renderDiaryTimeline();
+      }, 230);
+    }
+  });
+  const finishHandle = event => {
+    if (!handleDrag || event.pointerId !== handleDrag.id) return;
+    clearInterval(edgeTimer);
+    edgeTimer = null;
+    if (handleDrag.moved) {
+      suppressTimelineClick = true;
+      timelineOffset -= Math.round((event.clientX - handleDrag.x) / timelineStep());
+      renderDiaryTimeline();
+      const date = toDateText(timelineDateAt(3));
+      if (date <= toDateText(new Date())) openTimelineDate(date);
+      else showFutureDateMessage();
+      setTimeout(() => { suppressTimelineClick = false; }, 0);
+    }
+    track.classList.remove("is-dragging");
+    handleDrag = null;
+  };
+  track.addEventListener("pointerup", finishHandle);
+  track.addEventListener("pointercancel", finishHandle);
+}
+
+function openTimelineDate(dateText) {
+  if (!state.diaryBridge?.loadEntryByDate || dateText > toDateText(new Date())) return;
+  if (dateText === toDateText(state.currentDate)) {
+    centerTimelineOn(dateText);
+    renderDiaryTimeline();
+    return showPage("diary");
+  }
+  const request = ++timelineRequestId;
+  const load = () => state.diaryBridge.loadEntryByDate(dateText, entry => {
+    if (request !== timelineRequestId || entry?.date !== dateText) return;
+    centerTimelineOn(dateText);
+    showEntry(entry);
+    showPage("diary");
+  });
+  if (state.hasUnsavedChanges) saveCurrentEntry(() => {
+    if (request === timelineRequestId) load();
+  });
+  else load();
 }
 
 function formatDiaryDate(date) {
@@ -136,15 +364,6 @@ function formatDiaryDate(date) {
     day: "numeric",
   });
 }
-
-let recentEntryTrigger = null;
-let recentMood = "";
-let recentSavedMood = "";
-let recentDirty = false;
-let recentSelection = null;
-let recentRequestId = 0;
-
-function recentEditor() { return document.querySelector("#diary-recent-dialog-editor"); }
 
 function selectedFont(editor) {
   const selection = window.getSelection();
@@ -169,17 +388,18 @@ function syncToolbar(editor, toolbar) {
   const font = selectedFont(editor);
   toolbar.querySelectorAll("[data-diary-font]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.diaryFont === font)));
   const commandMap = { bold: "bold", italic: "italic", underline: "underline", bullet: "insertUnorderedList", number: "insertOrderedList" };
-  toolbar.querySelectorAll("[data-editor-command], [data-recent-command]").forEach(button => {
-    const command = button.dataset.editorCommand || button.dataset.recentCommand;
+  toolbar.querySelectorAll("[data-editor-command]").forEach(button => {
+    const command = button.dataset.editorCommand;
     if (commandMap[command]) button.setAttribute("aria-pressed", String(document.queryCommandState(commandMap[command])));
     if (command === "undo" || command === "redo") button.disabled = !document.queryCommandEnabled(command);
   });
   const block = String(document.queryCommandValue("formatBlock") || "p").replace(/[<>]/g, "").toLowerCase();
-  toolbar.querySelector(".diary-format-menu summary > span").textContent = block === "h1" || block === "h2" ? block.toUpperCase() : "paragraph";
+  toolbar.querySelector(".diary-format-menu summary > span").textContent = ["h1", "h2", "h3"].includes(block) ? block.toUpperCase() : "paragraph";
   toolbar.querySelectorAll(".diary-format-options button").forEach(button => {
-    const command = button.dataset.editorCommand || button.dataset.recentCommand;
-    button.setAttribute("aria-pressed", String(command === (block === "h1" || block === "h2" ? block : "p")));
+    const command = button.dataset.editorCommand;
+    button.setAttribute("aria-pressed", String(command === (["h1", "h2", "h3"].includes(block) ? block : "p")));
   });
+  toolbar.querySelector(".diary-heading-menu summary")?.setAttribute("aria-pressed", String(["h1", "h2", "h3"].includes(block)));
 }
 
 function chooseAndInsertImage(editor, restoreSelection) {
@@ -195,85 +415,6 @@ function chooseAndInsertImage(editor, restoreSelection) {
   });
 }
 
-function renderRecentMood() {
-  const row = document.querySelector("#diary-recent-dialog-moods");
-  const buttons = [...row.querySelectorAll("[data-mood]")];
-  buttons.forEach(button => {
-    button.classList.toggle("is-selected", button.dataset.mood === recentMood);
-    button.setAttribute("aria-pressed", String(button.dataset.mood === recentMood));
-  });
-  const before = new Map(buttons.map(button => [button, button.getBoundingClientRect()]));
-  buttons.sort((a, b) => Number(b.dataset.mood === recentMood) - Number(a.dataset.mood === recentMood) || Number(a.dataset.moodOrder) - Number(b.dataset.moodOrder));
-  buttons.forEach(button => row.append(button));
-  buttons.forEach(button => {
-    const old = before.get(button);
-    const next = button.getBoundingClientRect();
-    const dx = old.left - next.left;
-    if (Math.abs(dx) > 1 && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      button.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], { duration: 280, easing: "ease-in-out" });
-    }
-  });
-}
-
-function setRecentEntry(entry) {
-  document.querySelector("#diary-recent-dialog-title").textContent = formatDiaryDate(new Date(`${entry.date}T00:00:00`));
-  showDiaryContent(recentEditor(), entry);
-  recentSelection = null;
-  recentMood = entry.mood || "";
-  recentSavedMood = recentMood;
-  recentDirty = false;
-  renderRecentMood();
-  document.querySelector(".diary-recent-toolbar .diary-font-menu summary > span").textContent = entryFont(recentEditor());
-  const edited = entry.updated_at ? new Date(entry.updated_at.replace(" ", "T")) : null;
-  document.querySelector("#diary-recent-dialog-edited").textContent = edited && !Number.isNaN(edited.getTime())
-    ? `Last edited: ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).format(edited)}`
-    : "Not edited yet";
-}
-
-function closeRecentEntry() {
-  const dialog = document.querySelector("#diary-recent-dialog");
-  if (dialog.hidden) return;
-  recentRequestId += 1;
-  dialog.hidden = true;
-  dialog.classList.remove("is-expanded");
-  document.querySelector("#diary-recent-color-popover").hidden = true;
-  if (recentEntryTrigger?.isConnected) recentEntryTrigger.focus();
-  else document.querySelector(`#calendar-grid [data-date="${dialog.dataset.date}"]`)?.focus();
-  recentEntryTrigger = null;
-}
-
-function openHistoricalEntryByDate(dateText, trigger) {
-  if (!state.diaryBridge?.getHistoricalEntryByDate) return;
-  const request = ++recentRequestId;
-  const sourcePage = dom.app?.dataset.activePage;
-  state.diaryBridge.getHistoricalEntryByDate(dateText, entry => {
-    if (request !== recentRequestId || sourcePage !== dom.app?.dataset.activePage || !entry?.has_content || entry.date !== dateText) return;
-    recentEntryTrigger = trigger || document.activeElement;
-    const dialog = document.querySelector("#diary-recent-dialog");
-    dialog.dataset.date = entry.date;
-    setRecentEntry(entry);
-    dialog.hidden = false;
-    document.querySelector("#diary-recent-dialog-close").focus();
-  });
-}
-
-function updateRecentEntries() {
-  if (!state.diaryBridge?.getRecentEntries) return;
-  state.diaryBridge.getRecentEntries((entries) => {
-    dom.diaryRecentCards.forEach((card, index) => {
-      const entry = entries?.[index];
-      card.hidden = !entry;
-      if (!entry) return;
-      card.dataset.date = entry.date;
-      card.querySelector("strong").textContent = formatDiaryDate(new Date(`${entry.date}T00:00:00`));
-      const text = String(entry.text || "").trim();
-      const count = text ? text.split(/\s+/).length : 0;
-      card.querySelector("small").textContent = `${count} ${count === 1 ? "word" : "words"}`;
-      card.querySelector(".diary-recent-excerpt").textContent = text.replace(/\s+/g, " ");
-    });
-    dom.diaryRecent?.classList.toggle("is-visible", Boolean(entries?.length));
-  });
-}
 
 let editorAnimation = null;
 let editorPlaceholder = null;
@@ -308,10 +449,12 @@ function restoreEditorSelection() {
   }
 }
 
-function closeColorPopover() {
+function closeColorPopover(keepSelected = false) {
   const popover = document.querySelector("#diary-color-popover");
   popover.hidden = true;
-  document.querySelector(".diary-color-button").setAttribute("aria-expanded", "false");
+  const button = document.querySelector(".diary-color-button");
+  button.setAttribute("aria-expanded", "false");
+  if (!keepSelected) button.setAttribute("aria-pressed", "false");
 }
 
 function setSelectedColor(color) {
@@ -319,12 +462,13 @@ function setSelectedColor(color) {
   for (const button of document.querySelectorAll("#diary-color-popover [data-diary-color]")) {
     button.setAttribute("aria-pressed", String(button.dataset.diaryColor === color));
   }
-  document.querySelector(".diary-color-icon").style.backgroundColor = color;
+  document.querySelector(".diary-color-button .diary-color-icon").style.color = color;
 }
 
 function toggleColorPopover() {
   const popover = document.querySelector("#diary-color-popover");
-  if (!popover.hidden) return closeColorPopover();
+  const button = document.querySelector(".diary-color-button");
+  if (button.getAttribute("aria-pressed") === "true") return closeColorPopover();
   if (selectionInEditor()) {
     const range = window.getSelection().getRangeAt(0);
     editorSelection = range.cloneRange();
@@ -334,13 +478,18 @@ function toggleColorPopover() {
       if (color) setSelectedColor(color);
     }
   }
-  const button = document.querySelector(".diary-color-button");
   const anchor = button.getBoundingClientRect();
   popover.hidden = false;
-  const width = popover.getBoundingClientRect().width;
-  popover.style.left = `${Math.max(8, Math.min(anchor.left, innerWidth - width - 8))}px`;
-  popover.style.top = `${anchor.bottom + 10}px`;
+  const bounds = popover.getBoundingClientRect();
+  const gap = 10;
+  const roomBelow = innerHeight - anchor.bottom - gap;
+  const top = roomBelow >= bounds.height || roomBelow >= anchor.top - gap
+    ? anchor.bottom + gap
+    : anchor.top - bounds.height - gap;
+  popover.style.left = `${Math.max(8, Math.min(anchor.left, innerWidth - bounds.width - 8))}px`;
+  popover.style.top = `${Math.max(8, Math.min(top, innerHeight - bounds.height - 8))}px`;
   button.setAttribute("aria-expanded", "true");
+  button.setAttribute("aria-pressed", "true");
 }
 
 function editorGeometry(area) {
@@ -428,6 +577,21 @@ function setEditorExpanded(expanded) {
 
 let savedChatRequest = 0;
 
+function createSavedChatArticle(snippet) {
+  const article = document.createElement("article");
+  const role = document.createElement("small");
+  role.className = "chat-snippet-role";
+  role.textContent = snippet.role === "user" ? "You" : "Companion";
+  const content = document.createElement("p");
+  content.textContent = snippet.content;
+  const time = document.createElement("time");
+  time.dateTime = snippet.created_at;
+  time.textContent = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(snippet.created_at)).replace(/\s/g, "");
+  article.append(role, content, time);
+  return article;
+}
+
+
 function loadSavedChat(dateText) {
   const section = document.querySelector("#diary-saved-chat");
   const items = document.querySelector("#diary-saved-chat-items");
@@ -446,16 +610,7 @@ function loadSavedChat(dateText) {
       return;
     }
     document.querySelector("#diary-saved-chat-count").textContent = String(result.data.length);
-    for (const snippet of result.data) {
-      const article = document.createElement("article");
-      const content = document.createElement("p");
-      content.textContent = snippet.content;
-      const time = document.createElement("time");
-      time.dateTime = snippet.created_at;
-      time.textContent = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit" }).format(new Date(snippet.created_at)).replace(/\s/g, "");
-      article.append(content, time);
-      items.append(article);
-    }
+    items.replaceChildren(...result.data.map(createSavedChatArticle));
     section.hidden = result.data.length === 0;
   });
 }
@@ -465,6 +620,15 @@ function showEntry(entry) {
   state.currentDate = new Date(`${entry.date}T00:00:00`);
   dom.diaryTitle.textContent = formatDiaryDate(state.currentDate);
   if (dom.diaryYear) dom.diaryYear.textContent = state.currentDate.getFullYear();
+  const entryTime = document.querySelector("#diary-entry-time");
+  if (entryTime) {
+    const updated = entry.updated_at ? new Date(entry.updated_at) : new Date();
+    const [hour, minute] = (entry.entry_time || "").split(":").map(Number);
+    const chosenTime = entry.entry_time && Number.isInteger(hour) && Number.isInteger(minute) ? new Date(2000, 0, 1, hour, minute) : null;
+    const displayTime = chosenTime || updated;
+    const time = Number.isNaN(displayTime.getTime()) ? "" : ` · ${displayTime.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+    entryTime.textContent = `${state.currentDate.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}${time}`;
+  }
   showDiaryContent(dom.diaryEditor, entry);
   editorSelection = null;
   document.querySelector(".diary-writing-area .diary-font-menu summary > span").textContent = entryFont(dom.diaryEditor);
@@ -477,6 +641,7 @@ function showEntry(entry) {
   setMainEditing(false);
   renderMoodDisplays();
   renderCalendar();
+  renderDiaryTimeline();
 }
 
 export function loadTodayEntry(openDiaryPage = false) {
@@ -506,15 +671,16 @@ export function loadRecordedDates() {
 
   state.diaryBridge.getRecordedDates((dates) => {
     state.recordedDates = new Set(dates || []);
-    updateRecentEntries();
+    timelinePreviewCache.clear();
     renderCalendar();
+    renderDiaryTimeline();
   });
 }
 
 export function discardCurrentEntry(callback) {
-  if (!state.diaryBridge) return;
+  if (!state.diaryBridge?.loadEntryByDate) return;
   resetMainSave();
-  state.diaryBridge.discardTodayEntry((entry) => {
+  state.diaryBridge.loadEntryByDate(toDateText(state.currentDate), (entry) => {
     showEntry(entry);
     if (callback) callback();
   });
@@ -524,16 +690,102 @@ export function requestOpenDate(dateText, trigger) {
   const today = toDateText(new Date());
   if (dateText > today) return;
   if (dateText === today) {
-    if (toDateText(state.currentDate) === today) showPage("diary");
-    else loadTodayEntry(true);
+    openTimelineDate(dateText);
     return;
   }
-  openHistoricalEntryByDate(dateText, trigger);
+  if (state.recordedDates.has(dateText) || state.savedChatDates.has(dateText)) {
+    centerTimelineOn(dateText);
+    openTimelineDate(dateText);
+  }
 }
 
-/** 集中注册日记区域和两个弹窗的按钮事件。 */
+/** Register Diary editor and Add Entry interactions. */
 export function bindDiaryEvents() {
   if (!dom.diaryEditor) return;
+  window.addEventListener("calendar:diary-entry-changed", event => {
+    const date = event.detail?.date;
+    if (!date || date !== toDateText(state.currentDate) || state.hasUnsavedChanges) return;
+    if (event.detail.entry?.date === date) { showEntry(event.detail.entry); return; }
+    state.diaryBridge?.peekEntryByDate?.(date, entry => {
+      if (entry?.date === date && date === toDateText(state.currentDate) && !state.hasUnsavedChanges) showEntry(entry);
+    });
+  });
+  renderDiaryTimeline();
+  bindTimelineDragging();
+  bindDiaryAddEntry({ afterSave: (date, entry) => {
+    centerTimelineOn(date);
+    showEntry(entry);
+    loadRecordedDates();
+  } });
+  document.querySelector("#diary-header-today")?.addEventListener("click", () => {
+    const today = toDateText(new Date());
+    centerTimelineOn(today);
+    renderDiaryTimeline();
+    requestOpenDate(today);
+  });
+  const initialTime = document.querySelector("#diary-entry-time");
+  if (initialTime && !initialTime.textContent) initialTime.textContent = new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+  document.querySelector("#diary-timeline-prev")?.addEventListener("click", () => { timelineOffset -= 7; renderDiaryTimeline(); });
+  document.querySelector("#diary-timeline-next")?.addEventListener("click", () => { timelineOffset += 7; renderDiaryTimeline(); });
+  document.querySelector(".diary-focus-control")?.addEventListener("click", event => {
+    const button = event.currentTarget;
+    const collapsed = document.querySelector(".diary-page")?.classList.toggle("is-timeline-collapsed");
+    document.querySelector("#diary-timeline").inert = collapsed;
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", collapsed ? "Show timeline" : "Hide timeline");
+  });
+  document.querySelector("#diary-visual-save")?.addEventListener("click", () => dom.saveButton.click());
+  document.querySelector("#diary-visual-cancel")?.addEventListener("click", () => dom.discardButton.click());
+  const moreMenu = document.querySelector(".diary-more-menu");
+  const moreButton = moreMenu.querySelector(".diary-more-button");
+  const moreOptions = moreMenu.querySelector(".diary-more-options");
+  const closeMore = () => { moreOptions.hidden = true; moreButton.setAttribute("aria-expanded", "false"); };
+  moreButton.addEventListener("click", () => {
+    moreOptions.hidden = !moreOptions.hidden;
+    moreButton.setAttribute("aria-expanded", String(!moreOptions.hidden));
+  });
+  document.addEventListener("pointerdown", event => { if (!moreMenu.contains(event.target)) closeMore(); });
+  moreOptions.addEventListener("click", async event => {
+    const action = event.target.closest("[data-diary-action]")?.dataset.diaryAction;
+    if (!action) return;
+    closeMore();
+    if (action === "edit") { dom.diaryEditor.focus(); return; }
+    if (action === "title") {
+      dom.diaryEditor.focus();
+      const first = dom.diaryEditor.firstChild;
+      if (!first || !dom.diaryEditor.textContent.trim()) return;
+      const range = document.createRange(); range.setStart(first, 0); range.collapse(true);
+      const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(range);
+      editorSelection = range.cloneRange();
+      applyEditorCommand("h1");
+      return;
+    }
+    if (action === "share") {
+      const text = diaryPlainText(dom.diaryEditor).trim();
+      if (!text) return;
+      try {
+        if (navigator.share) await navigator.share({ text });
+        else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(text); window.alert("Diary text copied to clipboard."); }
+        else {
+          const copy = document.createElement("textarea"); copy.value = text; copy.style.position = "fixed"; copy.style.opacity = "0";
+          document.body.append(copy); copy.select();
+          const copied = document.execCommand("copy"); copy.remove();
+          if (!copied) throw new Error("Copy failed");
+          window.alert("Diary text copied to clipboard.");
+        }
+      } catch (error) { if (error.name !== "AbortError") window.alert("Could not share this entry."); }
+      return;
+    }
+    if (action === "delete" && window.confirm("Delete this diary entry? This cannot be undone.")) {
+      const date = toDateText(state.currentDate);
+      state.diaryBridge?.deleteEntryByDate?.(date, result => {
+        if (!result?.ok) { window.alert("Could not delete this entry."); return; }
+        resetMainSave();
+        state.recordedDates.delete(date);
+        state.diaryBridge.loadEntryByDate(date, entry => { showEntry(entry); loadRecordedDates(); });
+      });
+    }
+  });
   document.addEventListener("pointerdown", event => leaveMainEditingIfOutside(event.target));
   document.addEventListener("focusin", event => leaveMainEditingIfOutside(event.target));
   window.addEventListener("chat:snippet-changed", event => {
@@ -568,6 +820,7 @@ export function bindDiaryEvents() {
 
   const colorButton = document.querySelector(".diary-color-button");
   const colorPopover = document.querySelector("#diary-color-popover");
+  document.body.append(colorPopover);
   setSelectedColor(currentDiaryColor);
   colorButton.addEventListener("mousedown", event => {
     if (selectionInEditor()) editorSelection = window.getSelection().getRangeAt(0).cloneRange();
@@ -584,7 +837,7 @@ export function bindDiaryEvents() {
     applyDiaryColor(color);
     setSelectedColor(color);
     if (dom.diaryEditor.innerHTML !== before) dom.diaryEditor.dispatchEvent(new Event("input", { bubbles: true }));
-    closeColorPopover();
+    closeColorPopover(true);
   });
   document.addEventListener("pointerdown", event => {
     if (!colorPopover.hidden && !colorPopover.contains(event.target) && !colorButton.contains(event.target)) closeColorPopover();
@@ -593,148 +846,6 @@ export function bindDiaryEvents() {
   dom.saveButton.addEventListener("click", () => saveCurrentEntry());
   dom.discardButton.addEventListener("click", () => discardCurrentEntry());
 
-  dom.diaryRecentCards.forEach((card) => {
-    card.addEventListener("click", () => openHistoricalEntryByDate(card.dataset.date, card));
-  });
-  const recentDialog = document.querySelector("#diary-recent-dialog");
-  const recentEditorElement = recentEditor();
-  const recentMoodRow = document.querySelector("#diary-recent-dialog-moods");
-  document.querySelectorAll("#home-mood-menu [data-mood]").forEach((source, index) => {
-    const button = source.cloneNode(true);
-    button.removeAttribute("role");
-    button.dataset.moodOrder = String(index);
-    button.addEventListener("click", () => {
-      if (recentMood === button.dataset.mood) return;
-      recentMood = button.dataset.mood;
-      recentDirty = true;
-      renderRecentMood();
-    });
-    recentMoodRow.append(button);
-  });
-  recentEditorElement.addEventListener("input", () => { recentDirty = true; });
-  const recentToolbar = recentDialog.querySelector(".diary-recent-toolbar");
-  recentEditorElement.addEventListener("keyup", () => syncToolbar(recentEditorElement, recentToolbar));
-  recentEditorElement.addEventListener("mouseup", () => syncToolbar(recentEditorElement, recentToolbar));
-  recentEditorElement.addEventListener("input", () => syncToolbar(recentEditorElement, recentToolbar));
-  const restoreRecentSelection = () => {
-    const selection = window.getSelection();
-    if (selection?.rangeCount && recentEditorElement.contains(selection.anchorNode) && recentEditorElement.contains(selection.focusNode)) {
-      recentEditorElement.focus();
-      return;
-    }
-    recentEditorElement.focus();
-    if (recentSelection && recentEditorElement.contains(recentSelection.startContainer) && recentEditorElement.contains(recentSelection.endContainer)) {
-      selection.removeAllRanges();
-      selection.addRange(recentSelection);
-    }
-  };
-  recentToolbar.querySelector(".diary-font-menu summary").addEventListener("mousedown", event => {
-    const selection = window.getSelection();
-    if (selection?.rangeCount && recentEditorElement.contains(selection.anchorNode)) recentSelection = selection.getRangeAt(0).cloneRange();
-    event.preventDefault();
-  });
-  recentToolbar.querySelectorAll("[data-diary-font]").forEach(button => {
-    button.addEventListener("mousedown", event => event.preventDefault());
-    button.addEventListener("click", () => {
-      restoreRecentSelection();
-      const before = recentEditorElement.innerHTML;
-      applyDiaryFont(button.dataset.diaryFont);
-      if (before !== recentEditorElement.innerHTML) recentDirty = true;
-      button.closest(".diary-font-menu").open = false;
-      syncToolbar(recentEditorElement, recentToolbar);
-    });
-  });
-  recentToolbar.querySelector(".diary-format-menu summary").addEventListener("mousedown", event => {
-    const selection = window.getSelection();
-    if (selection?.rangeCount && recentEditorElement.contains(selection.anchorNode)) recentSelection = selection.getRangeAt(0).cloneRange();
-    event.preventDefault();
-  });
-  recentToolbar.querySelectorAll("[data-recent-command]").forEach(button => {
-    button.addEventListener("mousedown", event => {
-      const selection = window.getSelection();
-      if (selection?.rangeCount && recentEditorElement.contains(selection.anchorNode)) recentSelection = selection.getRangeAt(0).cloneRange();
-      event.preventDefault();
-    });
-    button.addEventListener("click", () => {
-      if (button.dataset.recentCommand === "link") {
-        chooseAndInsertImage(recentEditorElement, restoreRecentSelection);
-        return;
-      }
-      restoreRecentSelection();
-      const before = recentEditorElement.innerHTML;
-      applyDiaryCommand(recentEditorElement, button.dataset.recentCommand);
-      const menu = button.closest(".diary-format-menu");
-      if (menu) {
-        menu.querySelector("summary > span").textContent = button.dataset.recentCommand === "p" ? "paragraph" : button.dataset.recentCommand.toUpperCase();
-        menu.open = false;
-      }
-      if (before !== recentEditorElement.innerHTML) recentDirty = true;
-      syncToolbar(recentEditorElement, recentToolbar);
-    });
-  });
-  const recentColors = document.querySelector("#diary-recent-color-popover");
-  document.querySelectorAll("#diary-color-popover [data-diary-color]").forEach(source => {
-    const button = source.cloneNode(true);
-    button.addEventListener("mousedown", event => event.preventDefault());
-    button.addEventListener("click", () => {
-      restoreRecentSelection();
-      applyDiaryColor(button.dataset.diaryColor);
-      recentDirty = true;
-      recentColors.hidden = true;
-    });
-    recentColors.append(button);
-  });
-  recentToolbar.querySelector(".diary-recent-color").addEventListener("mousedown", event => {
-    const selection = window.getSelection();
-    if (selection?.rangeCount && recentEditorElement.contains(selection.anchorNode)) recentSelection = selection.getRangeAt(0).cloneRange();
-    event.preventDefault();
-  });
-  recentToolbar.querySelector(".diary-recent-color").addEventListener("click", () => { recentColors.hidden = !recentColors.hidden; });
-  document.querySelector("#diary-recent-expand").addEventListener("click", () => recentDialog.classList.toggle("is-expanded"));
-  document.querySelector("#diary-recent-dialog-cancel").addEventListener("click", closeRecentEntry);
-  document.querySelector("#diary-recent-dialog-save").addEventListener("click", () => {
-    if (!recentDirty || !state.diaryBridge?.saveRecentEntryByDate) return closeRecentEntry();
-    const date = recentDialog.dataset.date;
-    const saveText = () => state.diaryBridge.saveRecentEntryByDate(date, diaryPayload(recentEditorElement), () => {
-      loadRecordedDates();
-      closeRecentEntry();
-    });
-    if (recentMood !== recentSavedMood) {
-      state.diaryBridge.saveMoodByDate(date, recentMood, () => {
-        state.recordedMoods[date] = recentMood;
-        renderMoodDisplays();
-        renderCalendar();
-        saveText();
-      });
-    } else saveText();
-  });
-  const deleteConfirm = document.querySelector("#diary-recent-delete-confirm");
-  document.querySelector("#diary-recent-dialog-trash").addEventListener("click", () => {
-    deleteConfirm.hidden = false;
-    document.querySelector("#diary-recent-delete-cancel").focus();
-  });
-  document.querySelector("#diary-recent-delete-cancel").addEventListener("click", () => { deleteConfirm.hidden = true; });
-  document.querySelector("#diary-recent-delete-approve").addEventListener("click", () => {
-    const date = recentDialog.dataset.date;
-    state.diaryBridge.saveRecentEntryByDate(date, "", () => {
-      deleteConfirm.hidden = true;
-      closeRecentEntry();
-      loadRecordedDates();
-    });
-  });
-  document.querySelector("#diary-recent-dialog-close").addEventListener("click", closeRecentEntry);
-  recentDialog.addEventListener("pointerdown", event => {
-    if (event.target === recentDialog) closeRecentEntry();
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !deleteConfirm.hidden) deleteConfirm.hidden = true;
-    else if (event.key === "Escape" && !recentColors.hidden) recentColors.hidden = true;
-    else if (event.key === "Escape" && !recentDialog.hidden) closeRecentEntry();
-  });
-
-  dom.previousEntryButton?.addEventListener("click", () => {
-    showPage("calendar");
-  });
 
   dom.diaryExpandButton?.addEventListener("click", () => {
     setEditorExpanded(!dom.app?.classList.contains("diary-editor-expanded"));
@@ -767,9 +878,10 @@ export function bindDiaryEvents() {
         return;
       }
       applyEditorCommand(button.dataset.editorCommand);
-      const menu = button.closest(".diary-format-menu");
+      const menu = button.closest(".diary-format-menu, .diary-heading-menu");
       if (menu) {
-        menu.querySelector("summary > span").textContent = button.dataset.editorCommand === "p" ? "paragraph" : button.dataset.editorCommand.toUpperCase();
+        const label = menu.querySelector("summary > span");
+        if (label) label.textContent = button.dataset.editorCommand === "p" ? "paragraph" : button.dataset.editorCommand.toUpperCase();
         menu.open = false;
       }
     });

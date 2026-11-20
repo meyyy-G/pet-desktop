@@ -8,7 +8,7 @@ export const DIARY_COLORS = Object.freeze([
 ]);
 export const DIARY_FONTS = Object.freeze(["Inter", "Geom", "Jost"]);
 
-const allowedTags = new Set(["B", "STRONG", "I", "EM", "U", "H1", "H2", "P", "DIV", "BR", "UL", "OL", "LI", "SPAN", "FONT", "A", "IMG"]);
+const allowedTags = new Set(["B", "STRONG", "I", "EM", "U", "H1", "H2", "H3", "P", "DIV", "BR", "UL", "OL", "LI", "SPAN", "FONT", "A", "IMG"]);
 const discardedTags = new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "SVG", "MATH", "FORM", "INPUT", "BUTTON"]);
 
 export function allowedDiaryColor(value) {
@@ -65,6 +65,11 @@ export function diaryPlainText(editor) {
   return editor.innerText.replace(/\r/g, "");
 }
 
+export function countDiaryWords(text) {
+  const parts = String(text || "").match(/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]|[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*/gu);
+  return parts?.length || 0;
+}
+
 export function diaryPayload(editor) {
   return RICH_TEXT_PREFIX + JSON.stringify({
     text: diaryPlainText(editor),
@@ -89,7 +94,7 @@ export function applyDiaryCommand(editor, command) {
     bullet: "insertUnorderedList", number: "insertOrderedList",
   };
   if (commands[command]) return document.execCommand(commands[command], false);
-  if (command === "p" || command === "h1" || command === "h2") return document.execCommand("formatBlock", false, command);
+  if (command === "p" || command === "h1" || command === "h2" || command === "h3") return document.execCommand("formatBlock", false, command);
   if (command === "rule") return document.execCommand("insertText", false, "\n---\n");
   return false;
 }

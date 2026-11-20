@@ -24,27 +24,7 @@ export function getDayPeriod(hour) {
   return "evening";
 }
 
-// Mood 卡片和摘要配色；日历使用独立的 calendarMoodColors。
-export const moodColors = Object.freeze({
-  Stress: "#b7adad",
-  Low: "#1471da",
-  Anxious: "#ff383c",
-  Steady: "#8fb994",
-  Light: "#dab6b4",
-  Inspired: "#cb30e0",
-  Grateful: "#ffcc00",
-});
-
-// Home 小日历背景与 Calendar 日期圆点共享的 Figma 色卡。
-export const calendarMoodColors = Object.freeze({
-  Low: "#9EBEF1",
-  Steady: "#CFF7D3",
-  Light: "#FEE9E7",
-  Grateful: "#FFE8A3",
-  Anxious: "#FCB3AD",
-  Stress: "#B3B3B3",
-  Inspired: "#FAE1FA",
-});
+export { moodColors, calendarMoodColors } from "./mood-palette.js";
 
 // 状态模块：集中保存会在运行过程中变化的数据。
 // 导出同一个对象后，各功能模块看到的始终是同一份状态。
@@ -61,6 +41,7 @@ export const state = {
   miniVisibleMonth: new Date(today.getFullYear(), today.getMonth(), 1),
   miniCalendarPage: Math.floor((new Date(today.getFullYear(), today.getMonth(), 1).getDay() + today.getDate() - 1) / 28),
   recordedDates: new Set(),
+  savedChatDates: new Set(),
   recordedMoods: {},
   selectedMiniDate: toDateText(new Date()),
 };

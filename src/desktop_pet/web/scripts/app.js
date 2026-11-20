@@ -1,17 +1,19 @@
 // Web entry point: wires the migrated business modules to the new page.
 import { state } from "./state.js";
+import { applyMoodPaletteToControls } from "./mood-palette.js";
 import { connectDiaryBridge } from "./qt-bridge.js";
 import { bindNavigationEvents } from "./navigation.js";
+import { bindProfileEvents, loadProfileFromBridge } from "./pages/profile.js";
 import {
-  bindFocusToggle,
   bindMoodEvents,
+  bindHomeHeaderEvents,
   loadRecordedMoods,
   renderMiniCalendar,
   updateCurrentTime,
   updateHomeHeader,
   updateWeekStrip,
 } from "./pages/home.js";
-import { bindCalendarEvents, renderCalendar } from "./pages/calendar.js";
+import { bindCalendarEvents, loadSavedChatDates, renderCalendar } from "./pages/calendar.js";
 import { bindTaskEvents, loadTasks } from "./pages/task.js";
 import { bindChatEvents, loadChat } from "./pages/chat.js";
 import {
@@ -23,11 +25,13 @@ import {
   saveCurrentEntry,
 } from "./pages/diary.js";
 
+applyMoodPaletteToControls();
 bindNavigationEvents();
+bindProfileEvents();
 bindCalendarEvents(requestOpenDate);
 bindDiaryEvents();
 bindMoodEvents();
-bindFocusToggle();
+bindHomeHeaderEvents();
 bindTaskEvents();
 bindChatEvents();
 
@@ -43,6 +47,7 @@ window.addEventListener("diary:page-changed", (event) => {
   if (!state.diaryBridge) return;
   state.diaryBridge.notifyPageChanged(event.detail.pageName);
 });
+window.addEventListener("user:profile-changed", updateHomeHeader);
 
 window.diaryApp = {
   hasUnsavedChanges() {
@@ -60,6 +65,7 @@ window.diaryApp = {
 
 connectDiaryBridge((bridge) => {
   state.diaryBridge = bridge;
+  loadProfileFromBridge(bridge);
   const activePage = document.querySelector(".page.active");
   state.diaryBridge.notifyPageChanged(activePage?.id || "home");
   updateCurrentTime();
@@ -69,6 +75,7 @@ connectDiaryBridge((bridge) => {
   loadRecordedMoods();
   loadTasks();
   loadChat();
+  loadSavedChatDates();
   if (document.querySelector("#diary-editor")) loadTodayEntry();
   loadRecordedDates();
   renderCalendar();

@@ -221,7 +221,9 @@ src/desktop_pet/web/assets/
 
 # Only the README preview media below is public
 assets/images/*
-!assets/images/app-icon.png
+!assets/images/icons/
+assets/images/icons/*
+!assets/images/icons/cat_app.png
 !assets/images/1.gif
 !assets/images/2.gif
 !assets/images/3.gif
@@ -235,8 +237,8 @@ assets/images/*
 !assets/images/sick.gif
 !assets/images/heal.gif
 !assets/images/app_diary.png
-!assets/images/日记端盒子猫.gif
-!assets/images/看你打字.gif
+!assets/images/box_cat.gif
+!assets/images/小猫陪你写.gif
 !assets/images/app_home.png
 !assets/images/app_calendar.png
 !assets/images/app_chat.png

@@ -10,7 +10,7 @@ const details = source.slice(source.indexOf('const moodDetails ='), source.index
 const renderer = source.slice(source.indexOf('function updateMoodButtonState()'), source.indexOf('export function renderMiniCalendar()'));
 
 function render(mood, selectedDate = '2026-08-27') {
-  const icon = { hidden: false, style: { setProperty(key, value) { this[key] = value; } } };
+  const icon = { hidden: false, style: { setProperty(key, value) { this[key] = value; } }, closest() { return { style: { setProperty() {}, removeProperty() {} } }; } };
   const buttons = ['Stress', 'Low', 'Anxious', 'Steady', 'Light', 'Inspired', 'Grateful'].map(name => ({
     dataset: { mood: name },
     classList: { toggle(key, value) { this[key] = value; } },
@@ -21,6 +21,9 @@ function render(mood, selectedDate = '2026-08-27') {
     dom,
     state: { selectedMiniDate: selectedDate, recordedMoods: { [selectedDate]: mood } },
     moodColors: { Steady: '#8fb994', Light: '#dab6b4', Low: '#1471da', Inspired: '#cb30e0' },
+    moodBackground: () => '#eeeeee33',
+    moodIconFiles: { Steady: 'steady.svg', Light: 'light.svg', Low: 'low.svg', Inspired: 'inspired.svg' },
+    document: { body: { dataset: { svgBase: './assets/' } } },
     months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     toDateText: date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
   });
@@ -81,45 +84,4 @@ test('selecting July 2 restores July 1 mood color and makes July 2 black', () =>
   assert.equal(july1.classList.contains('mood-history'), true);
   assert.equal(july2.style.backgroundColor, 'var(--text-primary)');
   assert.equal(july2['aria-pressed'], 'true');
-});
-
-test('Daily Snapshot only shows today’s recorded mood, independent of mini calendar selection', () => {
-  const today = new Date();
-  const todayText = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const otherDate = '2020-07-02';
-  const dot = {
-    hidden: true,
-    classList: { toggle() {} },
-    style: { setProperty(key, value) { this[key] = value; }, removeProperty() {} },
-  };
-  const dom = { snapshotMoodDot: dot, snapshotMoodName: {}, snapshotMoodDetail: {} };
-  const state = {
-    currentDate: new Date(`${otherDate}T00:00:00`),
-    selectedMiniDate: otherDate,
-    recordedMoods: { [otherDate]: 'Light' },
-  };
-  const context = {
-    dom, state, document: { body: { dataset: { svgBase: '/svg/' } } },
-    moodColors: { Steady: '#8fb994', Light: '#dab6b4' },
-    toDateText: date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
-  };
-  const displayRenderer = source.slice(source.indexOf('const moodDetails ='), source.indexOf('function showMoodTooltip')).replace('export function renderMoodDisplays()', 'function renderMoodDisplays()');
-  const renderSnapshot = () => vm.runInNewContext(displayRenderer + '\nrenderMoodDisplays();', { ...context });
-
-  renderSnapshot();
-  assert.equal(dom.snapshotMoodName.textContent, 'Not set');
-  assert.equal(dom.snapshotMoodDetail.textContent, 'No check-in yet');
-  assert.equal(dot.hidden, true);
-
-  state.recordedMoods[todayText] = 'Steady';
-  renderSnapshot();
-  assert.equal(dom.snapshotMoodName.textContent, 'Steady');
-  assert.equal(dom.snapshotMoodDetail.textContent, 'Grounded & Calm');
-  assert.equal(dot.hidden, false);
-  assert.equal(dot.style['--mood-icon'], 'url("/svg/moodcard/steady.svg")');
-  assert.equal(dot.style['--display-mood-color'], '#8fb994');
-
-  state.selectedMiniDate = '2020-07-03';
-  renderSnapshot();
-  assert.equal(dom.snapshotMoodName.textContent, 'Steady');
 });

@@ -55,50 +55,39 @@ CHECK = r"""(() => {
   expect(document.documentElement.scrollWidth <= innerWidth + 1, 'document overflows horizontally');
   expect(document.documentElement.scrollHeight <= innerHeight + 1, 'document scrolls instead of page');
   const sidebar = document.querySelector('.sidebar');
-  const right = document.querySelector('.right-sidebar');
-  const rightVisible = getComputedStyle(right).display !== 'none';
-  expect(rightVisible === (innerWidth >= (['home', 'calendar', 'task'].includes(active.id) ? 1280 : 1200) && active.id !== 'diary'), 'wrong summary visibility');
-  expect(near(rect(main).right, rightVisible ? rect(right).left : innerWidth), 'unfilled strip beside main area');
+  expect(near(rect(main).right, innerWidth), 'unfilled strip beside main area');
   expect(near(rect(sidebar).height, innerHeight), 'navigation does not fill height');
   if (innerWidth < 1000) expect(rect(sidebar).width <= 80, 'navigation did not compact');
-  if (active.id === 'diary') expect(near(rect(document.querySelector('.diary-header')).left, rect(main).left + 26), 'Diary header is not left-aligned');
+  if (['home', 'diary', 'chat', 'calendar'].includes(active.id)) {
+    const layout = getComputedStyle(active);
+    expect(layout.paddingLeft === '25px' && layout.paddingRight === '25px' &&
+      layout.paddingTop === '18px' && layout.paddingBottom === '18px' && layout.rowGap === '24px',
+      'Main page padding or gap differs from the shared layout');
+  }
+  if (active.id === 'diary') expect(near(rect(document.querySelector('.diary-header')).left, rect(main).left + 25), 'Diary header is not left-aligned');
   if (active.id === 'task') {
-    const tabs = document.querySelector('.tp-tabs');
-    const currentTab = tabs.querySelector('.tp-tab-current');
-    expect(near(rect(document.querySelector('.tp-header')).left, rect(main).left + 26), 'Task header is not left-aligned');
-    expect(near(rect(tabs).left, rect(main).left + 26) && near(rect(tabs).right, rect(main).right - 26), 'Task tabs divider does not have equal side padding');
-    expect(near(rect(currentTab).bottom, rect(tabs).bottom - 1), 'Task active underline is detached from the divider');
-    expect(near(rect(document.querySelector('.tp-quick-add')).width, Math.min(808, rect(main).width - 52)), 'Task Quick Add width differs from the design');
-    if (rect(main).width >= 1000) {
-      const center = el => (rect(el).left + rect(el).right) / 2;
-      expect(near(center(document.querySelector('.tp-quick-add')), center(main)), 'Task Quick Add is not centered in wide windows');
-      expect(near(center(document.querySelector('#task-view-section')), center(main)), 'Task list is not centered in wide windows');
-    }
+    const header = active.querySelector('.tp-header');
+    const workspace = active.querySelector('.tp-workspace');
+    const sidebar = active.querySelector('.tp-sidebar');
+    expect(rect(header).left >= rect(main).left, 'Task header escapes main area');
+    expect(rect(workspace).right <= rect(sidebar).left + 1 || rect(sidebar).top >= rect(workspace).bottom,
+      'Task workspace and sidebar overlap');
   }
   if (['home', 'chat', 'calendar'].includes(active.id)) {
-    const diary = document.querySelector('.diary-page');
-    const previousPage = shell.dataset.activePage;
-    shell.dataset.activePage = 'diary';
-    diary.classList.add('active');
-    const diaryLeft = rect(document.querySelector('.diary-writing-area')).left;
-    diary.classList.remove('active');
-    shell.dataset.activePage = previousPage;
     const header = document.querySelector(active.id === 'home' ? '.home-header' : active.id === 'task' ? '.tp-header' : active.id === 'calendar' ? '.calendar-header' : '.chat-header');
     if (active.id === 'home') {
-      expect(near(rect(header).left, rect(main).left + 26), 'Home header is not left-aligned');
-      expect(near(rect(document.querySelector('.home-workspace')).left, diaryLeft), 'Home workspace moved from its existing position');
-      expect(near(rect(document.querySelector('.mood-card')).left, diaryLeft), 'Home mood card moved from its existing position');
-      expect(near(rect(document.querySelector('.mood-card')).width, Math.min(812, rect(main).width - 52)), 'Home mood card did not retain its designed width');
+      expect(near(rect(header).left, rect(main).left + 25), 'Home header is not left-aligned');
+      expect(rect(document.querySelector('.home-workspace')).left >= rect(main).left + 25, 'Home workspace escapes the page padding');
+      expect(rect(document.querySelector('.mood-card')).left >= rect(main).left + 25, 'Home mood card escapes the page padding');
+      expect(near(rect(document.querySelector('.mood-card')).width, rect(main).width - 50), 'Home mood card did not fill the designed main width');
     } else if (active.id === 'calendar') {
-      expect(near(rect(header).left, rect(main).left + 26), 'Calendar header is not left-aligned');
+      expect(near(rect(header).left, rect(main).left + 25), 'Calendar header is not left-aligned');
       const calendarContent = document.querySelector('.calendar-content');
       expect(near((rect(calendarContent).left + rect(calendarContent).right) / 2, rect(active).left + active.clientWidth / 2), 'Calendar body is not centered');
     } else if (active.id === 'chat') {
-      expect(near(rect(header).left, rect(main).left + 26), 'Chat header is not left-aligned');
-      expect(near(rect(header).right, rect(main).right - 26), 'Chat header divider does not fill the available width');
-      expect(near(rect(document.querySelector('.chat-message-list')).left, diaryLeft), 'Chat messages moved from their existing position');
-    } else {
-      expect(near(rect(header).left, diaryLeft), 'content left edge differs from Diary: ' + rect(header).left + ' vs ' + diaryLeft);
+      expect(near(rect(header).left, rect(main).left + 25), 'Chat header is not left-aligned');
+      expect(near(rect(header).right, rect(main).right - 25), 'Chat header divider does not fill the available width');
+      expect(near(rect(document.querySelector('.chat-message-list')).left, rect(main).left + 30), 'Chat messages are not aligned to the page padding');
     }
   }
 
@@ -186,43 +175,22 @@ CHECK = r"""(() => {
     expect(rect(list).bottom <= rect(tasks).bottom, 'Home task list extends past its card');
   }
   if (active.id === 'task') {
-    const lists = [...active.querySelectorAll('.tp-list')];
-    expect(lists.length >= 1 && lists[0].getClientRects().length, 'Task list is missing');
-    const todayRows = active.querySelectorAll('#task-page-list .tp-row');
-    const periodGroups = active.querySelectorAll('.tp-period-group');
-    expect(todayRows.length ? periodGroups.length >= 1 && periodGroups.length <= 2 && [...periodGroups].every(group => group.querySelectorAll('.tp-row').length > 0) : periodGroups.length === 0 && active.querySelectorAll('#task-page-list .tp-empty-state').length === 1,
-      'Today empty state or Day/Night groups are wrong');
-    const dimensions = ['.tp-header h1', '.tp-tabs', '.tp-quick-add', '.tp-list-frame', '.tp-row, .tp-empty-state'].map(selector => {
-      const el = active.querySelector(selector);
-      return [Math.round(rect(el).width), Math.round(rect(el).height), getComputedStyle(el).fontSize];
-    });
-    expect(rect(active.querySelector('.tp-quick-add')).right <= rect(main).right + 1, 'Task Quick Add is clipped');
-    expect(rect(active.querySelector('#task-view-section')).bottom <= innerHeight + 1 || scrollable(active), 'Task content cannot scroll into view');
-    const listTop = rect(active.querySelector('#task-view-section')).top;
-    document.querySelector('#task-date-select').click();
-    const floating = document.querySelector('.tp-floating-menu');
-    expect(Boolean(floating) && getComputedStyle(floating).position === 'fixed', 'Date dropdown is not a floating overlay');
-    expect(floating.querySelectorAll('.tp-calendar-grid button').length >= 28, 'Date dropdown has no month calendar');
-    const monthBefore = floating.querySelector('.tp-calendar-heading span').textContent;
-    floating.querySelector('[aria-label="Next month"]').click();
-    expect(floating.querySelector('.tp-calendar-heading span').textContent !== monthBefore, 'Date calendar cannot change months');
-    floating.querySelector('[aria-label="Previous month"]').click();
-    floating.querySelector('.tp-calendar-no-date').click();
-    expect(document.querySelector('#task-date-select span').textContent === 'No date', 'No date did not clear selection');
-    document.querySelector('#task-date-select').click();
-    document.querySelector('.tp-calendar-today').click();
-    expect(document.querySelector('#task-date-select span').textContent === 'Today', 'Today did not restore selection');
-    document.querySelector('[data-quick-period="night"]').click();
-    expect(document.querySelector('.tp-period-select').dataset.selectedPeriod === 'night', 'Night segment did not select');
-    expect(getComputedStyle(document.querySelector('.tp-period-slider')).transitionDuration.includes('0.26s'), 'Period slider has no transition');
-    document.querySelector('[data-quick-period="day"]').click();
-    expect(near(rect(active.querySelector('#task-view-section')).top, listTop), 'Date dropdown shifted the task list');
-    document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
-    expect(!document.querySelector('.tp-floating-menu'), 'Task dropdown did not close outside');
-    const completedTab = document.querySelector('[data-task-view="completed"]');
+    const section = active.querySelector('#task-view-section');
+    const list = active.querySelector('#task-page-list');
+    expect(Boolean(section && list && list.getClientRects().length), 'Task list is missing');
+    expect(rect(section).bottom <= innerHeight + 1 || scrollable(active), 'Task list cannot scroll into view');
+    const before = rect(section).top;
+    const sort = active.querySelector('#task-sort-trigger');
+    sort.click();
+    const sortMenu = document.querySelector('.tp-sort-menu');
+    expect(Boolean(sortMenu) && sortMenu.querySelectorAll('button').length === 4, 'Task sort menu is incomplete');
+    sortMenu?.querySelector('button')?.click();
+    expect(near(rect(section).top, before), 'Task sort shifted the list');
+    const completedTab = active.querySelector('[data-task-view="completed"]');
     completedTab.click();
-    expect(completedTab.classList.contains('tp-tab-current') && document.querySelector('#task-view-heading').textContent === 'COMPLETED', 'Task tabs do not switch views');
-    document.querySelector('[data-task-view="today"]').click();
+    expect(completedTab.classList.contains('tp-tab-current') && active.querySelector('#task-view-heading').textContent === 'Completed',
+      'Task tabs do not switch views');
+    active.querySelector('[data-task-view="all"]').click();
   }
   if (active.scrollHeight > active.clientHeight + 1 && !expanded) {
     expect(scrollable(active), 'page content is clipped vertically');
@@ -243,8 +211,8 @@ CHECK = r"""(() => {
     expect(rect(editor).height >= 60, 'diary editor too short');
     expect(scrollable(editor), 'diary text cannot scroll');
     if (expanded) {
-      expect(near(rect(area).width, rect(main).width - 52) && near(rect(area).height, innerHeight - 36), 'expanded editor retained old dimensions');
-      expect(near(rect(area).top, 18) && near(rect(area).left, rect(main).left + 26), 'expanded editor margin is incorrect');
+      expect(near(rect(area).width, rect(main).width - 50) && near(rect(area).height, innerHeight - 36), 'expanded editor retained old dimensions');
+      expect(near(rect(area).top, 18) && near(rect(area).left, rect(main).left + 25), 'expanded editor margin is incorrect');
     }
   }
   if (active.id === 'calendar') {
@@ -252,7 +220,7 @@ CHECK = r"""(() => {
     const panel = document.querySelector('.calendar-panel');
     const first = document.querySelector('#calendar-grid > :first-child');
     if (innerWidth >= 1050 && innerHeight >= 720) {
-      expect(near(rect(document.querySelector('.calendar-header')).width, 808), 'Calendar header lost Figma width');
+      expect(near(rect(document.querySelector('.calendar-header')).width, 808), 'Calendar header lost Figma width: ' + rect(document.querySelector('.calendar-header')).width);
       const scale = Number(getComputedStyle(document.querySelector('.calendar-content')).zoom);
       expect(near(rect(panel).width, 788 * scale), 'Calendar panel did not scale uniformly');
       expect(near(rect(first).width, 80 * scale) && near(rect(first).height, 80 * scale), 'Calendar dates did not scale uniformly');

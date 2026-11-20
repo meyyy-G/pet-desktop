@@ -49,7 +49,7 @@ test('mini calendar keeps past unrecorded dates outlined and blocks future selec
   vm.runInNewContext(
     renderSource + '\nrenderMiniCalendar();',
     {
-      Date: FixedDate, document: { createElement: makeElement }, dom, state,
+      Date: FixedDate, document: { createElement: makeElement, querySelector() { return null; } }, dom, state,
       months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
       toDateText: date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-'),
       isFutureDate: date => date > '2026-10-12',
@@ -70,6 +70,6 @@ test('mini calendar keeps past unrecorded dates outlined and blocks future selec
   assert.equal(state.selectedMiniDate, '2026-10-11');
   assert.equal(noteLoads, 1);
 
-  assert.match(homeCss, /button:not\(\.mood-history\):not\(\.mood-today\) \{ border: 1px solid var\(--border-default\); background: transparent; \}/);
+  assert.match(homeCss, /button:not\(\.mood-history\):not\(\.mood-today\) \{ border: 1px solid #bfbfbf; background: transparent; \}/);
   assert.match(homeCss, /button\.mini-future:not\(\.mood-history\):not\(\.mood-today\) \{[^}]*border: 0;/);
 });

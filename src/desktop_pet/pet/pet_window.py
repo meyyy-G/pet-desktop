@@ -409,6 +409,9 @@ class PetWindow(QWidget):
     def _save_position(self) -> None:
         self.settings.x = self.x()
         self.settings.y = self.y()
+        profile = SettingsStore.load()
+        self.settings.display_name = profile.display_name
+        self.settings.avatar_file = profile.avatar_file
         SettingsStore.save(self.settings)
 
     def _open_diary_window(self) -> None:

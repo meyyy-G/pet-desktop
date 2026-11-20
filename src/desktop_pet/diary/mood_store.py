@@ -71,6 +71,19 @@ class MoodStore:
             return ""
         return str(data.get("mood_note", "")) if isinstance(data, dict) else ""
 
+    def note_dates(self) -> list[str]:
+        dates = []
+        if not self.mood_dir.exists():
+            return dates
+        for path in self.mood_dir.glob("*/*/*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if isinstance(data, dict) and str(data.get("mood_note", "")).strip():
+                dates.append(data.get("date", path.stem))
+        return sorted(set(dates))
+
     def save_note(self, date: str, note: str) -> str:
         note = note.strip()
         if len(note) > 25:

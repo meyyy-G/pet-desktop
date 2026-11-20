@@ -47,17 +47,31 @@ class SavedChatStore:
         self._write(data)
         return {**message, "saved": False}
 
+    def update_message(self, message_id, content):
+        if not isinstance(content, str) or not content.strip():
+            raise ValueError("Chat message cannot be empty")
+        data = self._read()
+        message = next((item for item in data["messages"] if item["id"] == message_id), None)
+        if not message or message["role"] != "user":
+            raise ValueError("Only user messages can be edited")
+        message["content"] = content.strip()
+        snippet = next((item for item in data["snippets"] if item["message_id"] == message_id), None)
+        if snippet:
+            snippet["content"] = message["content"]
+        self._write(data)
+        return {**message, "saved": bool(snippet), "saved_date": snippet["date"] if snippet else None}
+
     def save_message(self, message_id):
         data = self._read()
         for snippet in data["snippets"]:
             if snippet["message_id"] == message_id:
                 return snippet
         message = next((item for item in data["messages"] if item["id"] == message_id), None)
-        if not message or message["role"] != "assistant":
-            raise ValueError("Only assistant messages can be saved")
+        if not message or message["role"] not in ("user", "assistant"):
+            raise ValueError("Chat message not found")
         now = datetime.now().astimezone()
         snippet = {"id": str(uuid4()), "message_id": message_id, "date": now.date().isoformat(),
-                   "content": message["content"], "created_at": now.isoformat()}
+                   "role": message["role"], "content": message["content"], "created_at": now.isoformat()}
         data["snippets"].append(snippet)
         self._write(data)
         return snippet
@@ -66,10 +80,13 @@ class SavedChatStore:
         data = self._read()
         snippet = next((item for item in data["snippets"] if item["message_id"] == message_id), None)
         if not snippet:
-            raise ValueError("Saved assistant message not found")
+            raise ValueError("Saved chat message not found")
         data["snippets"] = [item for item in data["snippets"] if item["message_id"] != message_id]
         self._write(data)
         return snippet
 
     def snippets_by_date(self, date):
         return [item for item in self._read()["snippets"] if item["date"] == date]
+
+    def saved_dates(self):
+        return sorted({item["date"] for item in self._read()["snippets"]})

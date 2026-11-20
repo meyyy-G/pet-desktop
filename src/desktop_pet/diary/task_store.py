@@ -8,10 +8,10 @@ from ..paths import TASKS_FILE
 
 
 class TaskStore:
-    CATEGORIES = {"work", "personal", "learning"}
+    CATEGORIES = {"work", "design", "personal", "learning"}
     PRIORITIES = {"low", "medium", "high"}
     PERIODS = {"day", "night"}
-    DEFAULT_DURATIONS = {"work": 45, "personal": 30, "learning": 30}
+    DEFAULT_DURATIONS = {"work": 45, "design": 45, "personal": 30, "learning": 30}
 
     def __init__(self, path: Path = TASKS_FILE):
         self.path = path
@@ -63,8 +63,6 @@ class TaskStore:
 
     def _normalized(self, values: dict, *, task_id: str, created_at: str) -> dict:
         category = values.get("category")
-        if category == "design":
-            category = "work"
         if category not in self.CATEGORIES:
             category = None
         priority = values.get("priority", "medium")

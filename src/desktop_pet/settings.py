@@ -10,6 +10,8 @@ class DesktopPetSettings:
     y: int = 650
     scale: int = 120
     always_on_top:bool = True
+    display_name: str = "Mey"
+    avatar_file: str = ""
 
 class SettingsStore:
     """设置储存器"""

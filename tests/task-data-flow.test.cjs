@@ -15,65 +15,84 @@ test('Task UI uses only the Python bridge data source', () => {
   assert.match(source, /setTimeout\(\(\) => \{ row\.classList\.add\("is-leaving"\).*600/s);
 });
 
-test('Quick Add and Task tabs expose the required controls', () => {
-  for (const id of ['task-quick-title', 'task-date-select', 'task-priority-select', 'task-quick-add', 'task-page-list']) {
+test('Add Task opens a modal and no longer renders the old inline form', () => {
+  for (const id of ['task-header-add', 'task-add-backdrop', 'task-add-form', 'task-add-name', 'task-add-date', 'task-add-duration', 'task-add-submit', 'task-add-cancel']) {
     assert.match(html, new RegExp(`id="${id}"`));
   }
-  for (const view of ['today', 'upcoming', 'all', 'completed']) {
-    assert.match(html, new RegExp(`data-task-view="${view}"`));
+  assert.doesNotMatch(html, /id="task-quick-add"|id="task-quick-title"/);
+  assert.match(source, /function bindAddTaskDialog\(\)/);
+  assert.match(source, /duration_minutes: Number\(duration\.value\)/);
+});
+
+test('Today and Upcoming reuse the standard task list without Day/Night groups', () => {
+  assert.doesNotMatch(source, /tp-period-group|openPeriodMenu\(/);
+  assert.match(source, /dom\.taskPageList\.replaceChildren\(\.\.\.\(tasks\.length \? tasks\.map\(task => taskRow\(task\)\)/);
+  assert.match(source, /taskState\.view === "upcoming" \? "sand-timer" : taskState\.view === "completed" \? "task-square" : "day"/);
+});
+
+test('Task more menu supports editing, completion, moving, and deletion', () => {
+  for (const label of ['Edit', 'Mark as completed', 'Move to', 'Delete']) {
+    assert.match(source, new RegExp(`"${label}"`));
   }
-  assert.match(source, /task\/calendar-add\.svg/);
-  assert.doesNotMatch(html, /id="task-category-select"/);
+  assert.match(source, /tp-menu-divider/);
+  assert.match(source, /tp-menu-delete/);
+  assert.match(source, /updateTask\(task\.id, \{ completed: !task\.completed \}\)/);
+  assert.match(source, /createTaskDatePicker\(\(\) => task\.date, value => \{ closeMenu\(\); updateTask\(task\.id, \{ date: value \}\)/);
+  assert.doesNotMatch(source, /dateInput\.type = "date"/);
 });
 
-test('Today and Home render only periods with tasks', () => {
-  assert.match(source, /if \(!period\.tasks\.length\) continue;/);
-  assert.match(source, /\["day", "night"\]\.filter\(period => tasks\.some\(task => task\.period === period\)\)/);
-  assert.doesNotMatch(source, /list\.append\(\.\.\.\(periodTasks\.length \? periodTasks\.map/);
+test('Task form reuses the calendar and duration menu for add and edit', () => {
+  assert.match(html, /id="task-add-date-trigger"/);
+  assert.match(html, /id="task-add-duration-trigger"/);
+  assert.match(html, /id="task-add-date" type="hidden"/);
+  assert.match(html, /id="task-add-duration" type="hidden"/);
+  assert.match(source, /calendar = createTaskDatePicker\(\(\) => date\.value/);
+  assert.match(source, /openDurationMenu\(durationTrigger, Number\(duration\.value\)/);
+  assert.match(source, /duration\.value = task \? String\(task\.duration_minutes\) : "45"/);
+  assert.match(source, /if \(editingTask\) updateTask\(editingTask\.id, values, close, failed\)/);
 });
 
-test('Date and combined priority menus follow the requested options', () => {
-  assert.match(source, /menuButton\("Today"[\s\S]*menuButton\("Pick a day"/);
-  assert.match(source, /TIME OF DAY/);
-  assert.match(source, /function periodIcon\(period\)/);
-  assert.doesNotMatch(source, /\["Tomorrow"/);
-  assert.match(source, /PRIORITY/);
-  assert.match(source, /CATEGORY/);
-  assert.match(source, /for \(const value of \["work", "personal", "learning"\]\)/);
-  assert.doesNotMatch(source, /"design", "work", "personal", "learning"/);
-  assert.match(source, /tp-menu-check/);
+test('Task sections collapse with the right arrow and keep view state', () => {
+  assert.match(html, /data-task-section-toggle="primary"/);
+  assert.match(html, /data-task-section-toggle="secondary"/);
+  assert.match(source, /const collapsedTaskSections = \{ all: false, today: false, upcoming: false, completed: false, secondary: false \}/);
+  assert.match(source, /collapsed \? "arrow-right4" : "arrow-down4"/);
+  assert.match(source, /toggle\.setAttribute\("aria-expanded", String\(!collapsed\)\)/);
 });
 
-test('Collapsed priority control shows only the selected priority', () => {
-  assert.match(html, /id="task-priority-select"[^>]*>[\s\S]*?task\/tag\.svg[\s\S]*?tp-priority-selected-dot[^>]*hidden[\s\S]*?<span>Priority<\/span>/);
-  assert.match(source, /quickPriorityChosen: false/);
-  assert.match(source, /dot\.dataset\.priority = taskState\.quickPriority/);
-  assert.match(source, /taskState\.quickPriorityChosen \? labels\[taskState\.quickPriority\] : "Priority"/);
-  assert.match(source, /taskState\.quickPriorityChosen = true;\s*renderQuickPriority\(\)/);
-  assert.doesNotMatch(source, /quickCategory[^\n]*renderQuickPriority/);
+test('Task filter exposes tag, priority, and status controls', () => {
+  assert.match(html, /id="task-filter-trigger"[^>]*aria-haspopup="dialog"/);
+  assert.doesNotMatch(html, /id="task-filter-trigger"[^>]*disabled/);
+  for (const value of ['work', 'design', 'personal', 'learning']) assert.match(html, new RegExp(`name="category" value="${value}"`));
+  for (const value of ['low', 'medium', 'high']) assert.match(html, new RegExp(`name="priority" value="${value}"`));
+  for (const value of ['all', 'incomplete', 'completed']) assert.match(html, new RegExp(`name="status" value="${value}"`));
+  assert.match(source, /function bindTaskFilter\(\)/);
+  assert.match(source, /categories\.includes\(task\.category\)/);
+  assert.match(source, /priorities\.includes\(task\.priority\)/);
+  assert.match(source, /task\.completed === \(status === "completed"\)/);
 });
 
-test('Combined priority and category menu stays open while choosing both values', () => {
-  assert.match(source, /closeOnSelect = true/);
-  assert.match(source, /if \(closeOnSelect\) closeMenu\(\)/);
-  assert.match(source, /updateMenuCheck\(menu, "priority", value\);[\s\S]*taskState\.quickPriorityChosen && taskState\.quickPriority === value, false\)\)/);
-  assert.match(source, /updateMenuCheck\(menu, "category", value\)[^\n]*false\)\)/);
+test('Task has no inline add form or Day/Night interface remnants', () => {
+  const css = fs.readFileSync(path.join(root, 'src/desktop_pet/web/styles/pages/task.css'), 'utf8');
+  assert.doesNotMatch(html, /id="task-quick-add"|id="task-date-select"|id="task-priority-select"/);
+  assert.doesNotMatch(source, /quickPeriod|renderQuickPeriod|openDateMenu|openPriorityMenu|tp-period-group/);
+  assert.doesNotMatch(css, /\.tp-quick-add|\.tp-period-group|\.tp-period-select|\.tp-calendar-menu/);
 });
 
-test('Short priority labels can be centered without moving Medium or the dot', () => {
-  assert.match(source, /button\.dataset\.selectedPriority = taskState\.quickPriority/);
+test('Sort supports chronological and priority order in the current Task view', () => {
+  assert.match(html, /id="task-sort-trigger"[^>]*aria-haspopup="menu"/);
+  assert.match(source, /function sortVisibleTasks\(a, b\)/);
+  for (const mode of ['time-asc', 'time-desc', 'priority-high', 'priority-low']) {
+    assert.ok(source.includes(`"${mode}"`), `${mode} is missing`);
+  }
+  assert.match(source, /filteredTasks\(\)\.sort\(sortVisibleTasks\)/);
+  assert.match(source, /bindTaskSort\(\)/);
 });
 
-test('Clicking the selected priority again clears only its explicit selection', () => {
-  assert.match(source, /taskState\.quickPriorityChosen && taskState\.quickPriority === value/);
-  assert.match(source, /taskState\.quickPriority = "medium";\s*taskState\.quickPriorityChosen = false;/);
-  assert.match(source, /updateMenuCheck\(menu, "priority", null\)/);
-  assert.match(source, /taskState\.quickPriorityChosen && taskState\.quickPriority === value, false/);
-});
-
-test('Clicking the open priority trigger toggles its menu closed', () => {
-  assert.match(source, /menuTrigger: null/);
-  assert.match(source, /taskState\.menuTrigger = button/);
-  assert.match(source, /taskState\.menu && taskState\.menuTrigger === dom\.taskPrioritySelect/);
-  assert.match(source, /taskState\.menuTrigger === dom\.taskPrioritySelect\) \{\s*closeMenu\(\);\s*return;/);
+test('Home task tabs use All, Uncompleted, and Completed without Day/Night', () => {
+  for (const view of ['all', 'uncompleted', 'completed']) {
+    assert.match(html, new RegExp(`data-home-task-period="${view}"`));
+  }
+  assert.doesNotMatch(html, /data-home-task-period="day"|data-home-task-period="night"/);
+  assert.match(source, /period === "completed" \? task\.completed : !task\.completed/);
 });

@@ -9,6 +9,8 @@ temporary = tempfile.TemporaryDirectory()
 os.environ["DESKTOP_PET_DATA_DIR"] = temporary.name
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--disable-gpu")
+os.environ.setdefault("QT_QUICK_BACKEND", "software")
+os.environ.setdefault("QT_OPENGL", "software")
 from PySide6.QtCore import QTimer, QUrl
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineProfile, QWebEngineSettings
@@ -77,10 +79,6 @@ def evaluate():
         results['main-' + command] = check(editor, button);
       }
       results['main-selected-bold'] = check(editor, document.querySelector('.diary-writing-area [data-editor-command="bold"]'), true);
-      const dialog = document.querySelector('#diary-recent-dialog');
-      dialog.hidden = false;
-      const recentEditor = document.querySelector('#diary-recent-dialog-editor');
-      results['modal-bold'] = check(recentEditor, document.querySelector('.diary-recent-toolbar [data-recent-command="bold"]'));
       return JSON.stringify(results);
     } catch (error) { return String(error.stack || error); } })()"""
     page.runJavaScript(script, checked)
@@ -97,7 +95,7 @@ def checked(result):
             finish(states)
         elif any(
             tag in states[key]["html"].lower()
-            for key in ("main-bold", "main-selected-bold", "modal-bold")
+            for key in ("main-bold", "main-selected-bold")
             for tag in ("<b>", "<strong>")
         ) or any(
             tag in states[key]["html"].lower()

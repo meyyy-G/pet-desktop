@@ -59,7 +59,7 @@ def test_legacy_tasks_gain_period_and_duration_without_using_time(tmp_path: Path
     assert json.loads(path.read_text(encoding="utf-8"))["tasks"][0] == task
 
 
-def test_legacy_design_category_reads_as_work_and_is_saved_as_work(tmp_path: Path):
+def test_design_category_is_preserved(tmp_path: Path):
     path = tmp_path / "tasks.json"
     store = TaskStore(path)
     task = store.add_task({"title": "Design draft", "date": "2026-09-22", "category": "work"})
@@ -67,10 +67,10 @@ def test_legacy_design_category_reads_as_work_and_is_saved_as_work(tmp_path: Pat
     saved["tasks"][0]["category"] = "design"
     path.write_text(json.dumps(saved), encoding="utf-8")
 
-    assert store.list_tasks()[0]["category"] == "work"
+    assert store.list_tasks()[0]["category"] == "design"
     changed = store.update_task(task["id"], {"title": "Design review"})
-    assert changed["category"] == "work"
-    assert json.loads(path.read_text(encoding="utf-8"))["tasks"][0]["category"] == "work"
+    assert changed["category"] == "design"
+    assert json.loads(path.read_text(encoding="utf-8"))["tasks"][0]["category"] == "design"
 
 
 def test_diary_bridge_exposes_task_crud(tmp_path: Path):

@@ -47,13 +47,15 @@ test('mini calendar leaves past unrecorded dates selectable and future dates uns
     selectedMiniDate: '2026-10-12',
     recordedMoods: { '2026-10-13': 'Steady' },
   };
+  const futureModal = cell('div');
   vm.runInNewContext(renderer + '\nrenderMiniCalendar();', {
     Date: FixedDate,
-    document: { createElement: cell },
-    dom: { miniCalendarGrid: grid },
+    document: { createElement: cell, querySelector() { return null; } },
+    dom: { miniCalendarGrid: grid, futureModal },
     state,
     months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     toDateText: date => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-'),
+    isFutureDate: date => date > '2026-10-12',
     calendarMoodColors: { Steady: '#8fb994' },
     syncMiniCalendarSelection() {},
     updateMoodButtonState() {},
@@ -67,11 +69,13 @@ test('mini calendar leaves past unrecorded dates selectable and future dates uns
   assert.equal(past.disabled, undefined);
   assert.equal(typeof past.listeners.click, 'function');
   assert.equal(past.classList.contains('mood-history'), false);
-  assert.equal(future.disabled, true);
-  assert.equal(future.listeners.click, undefined);
+  assert.equal(future['aria-disabled'], 'true');
+  assert.equal(typeof future.listeners.click, 'function');
   assert.equal(future.classList.contains('mini-future'), true);
   assert.equal(future.classList.contains('mood-history'), false);
-  assert.equal(future.title, '\u8fd8\u672a\u5230');
+  future.listeners.click();
+  assert.equal(futureModal.classList.contains('visible'), true);
+  assert.equal(state.selectedMiniDate, '2026-10-12');
   past.listeners.click();
   assert.equal(state.selectedMiniDate, '2026-10-11');
 });

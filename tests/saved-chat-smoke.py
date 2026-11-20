@@ -43,10 +43,40 @@ def finish(error=None):
 
 def check():
     script = """(() => {
-      const button = document.querySelector('button.chat-bookmark');
+      const button = document.querySelector('.chat-message-assistant button.chat-bookmark');
       const area = document.querySelector('#diary-saved-chat');
       if (!button) return 'wait';
-      if (document.querySelector('.chat-message-user .chat-bookmark')) return 'user bookmark';
+      const userActions = document.querySelector('.chat-message-user .chat-user-actions');
+      if (!userActions) return 'user actions missing';
+      if (STAGE === 5) {
+        document.querySelector('.nav-item[data-page="chat"]').click();
+        const actions = document.querySelectorAll('.chat-message-user .chat-user-action');
+        if (actions.length !== 3) return 'wrong user actions';
+        if ([...actions].map(item => item.getAttribute('aria-label')).join(',') !== "Copy,Save to today's diary,Edit") return 'wrong action labels';
+        if ([...actions].some(item => getComputedStyle(item).visibility !== 'hidden')) return 'actions not initially hidden';
+        if (document.querySelector('.chat-user-menu')) return 'old context menu remains';
+        actions[1].click();
+        return 'user-save-clicked';
+      }
+      if (STAGE === 6) {
+        document.querySelector('.nav-item[data-page="diary"]').click();
+        if (area.hidden || !area.textContent.includes('My question')) return 'wait';
+        document.querySelector('.nav-item[data-page="chat"]').click();
+        const actions = document.querySelectorAll('.chat-message-user .chat-user-action');
+        if (!actions[1].classList.contains('is-saved') || getComputedStyle(actions[1]).visibility !== 'visible') return 'saved bookmark not persistent';
+        if (getComputedStyle(actions[0]).visibility !== 'hidden' || getComputedStyle(actions[2]).visibility !== 'hidden') return 'copy/edit still visible';
+        actions[2].click();
+        const editor = document.querySelector('.chat-message-user .chat-message-editor');
+        if (!editor) return 'user editor missing';
+        editor.value = 'My updated question';
+        document.querySelector('.chat-message-user .chat-message-edit-actions button').click();
+        return 'user-edit-clicked';
+      }
+      if (STAGE === 7) {
+        if (document.querySelector('.chat-message-user .chat-message-editor')) return 'wait';
+        if (document.querySelector('.chat-message-user .chat-message-text p').textContent !== 'My updated question') return 'edited text not shown';
+        return 'user-edited';
+      }
       if (STAGE === 0) {
         if (button.classList.contains('is-saved')) return 'premature save';
         if (getComputedStyle(button).opacity !== '0') return 'bookmark not initially hidden';
@@ -84,7 +114,7 @@ def checked(result):
             view.setHtml(html, QUrl.fromLocalFile(str(web) + "/"))
         else:
             stage = 3
-            view.page().runJavaScript("document.querySelector('button.chat-bookmark').click()")
+            view.page().runJavaScript("document.querySelector('.chat-message-assistant button.chat-bookmark').click()")
             QTimer.singleShot(250, check)
     elif result == "unsaved":
         if bridge.saved_chat_store._read()["snippets"]:
@@ -93,7 +123,21 @@ def checked(result):
             stage = 4
             view.setHtml(html, QUrl.fromLocalFile(str(web) + "/"))
         else:
-            finish()
+            stage = 5
+            QTimer.singleShot(100, check)
+    elif result == "user-save-clicked":
+        stage = 6
+        QTimer.singleShot(250, check)
+    elif result == "user-edit-clicked":
+        stage = 7
+        QTimer.singleShot(250, check)
+    elif result == "user-edited":
+        snippets = bridge.saved_chat_store._read()["snippets"]
+        if len(snippets) != 1 or snippets[0]["role"] != "user" or snippets[0]["content"] != "My updated question":
+            return finish("Edited user bookmark was not persisted")
+        if bridge.saved_chat_store.messages()[0]["content"] != "My updated question":
+            return finish("Edited user message was not persisted")
+        finish()
     else:
         finish(result or "Page script unavailable")
 

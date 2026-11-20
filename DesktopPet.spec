@@ -7,7 +7,7 @@ src_dir = project_root / "src"
 datas = [
     (str(project_root / "assets" / "animations"), "assets/animations"),
     (str(project_root / "assets" / "images" / "icons" / "cat_app.ico"), "assets/images/icons"),
-    (str(project_root / "assets" / "images" / "icons" / "cat_journal.ico"), "assets/images/icons"),
+    (str(project_root / "assets" / "images" / "icons" / "Journal.png"), "assets/images/icons"),
     (str(project_root / "assets" / "web"), "assets/web"),
     (str(src_dir / "desktop_pet" / "web"), "desktop_pet/web"),
 ]

@@ -9,10 +9,10 @@ test('Calendar and Task fill the viewport without clipping', () => {
   require('./qt-layout.cjs')('calendar,task');
 });
 
-test('new Home does not scale the Figma frame', () => {
-  const cssFiles = ['styles/base.css', 'styles/shell.css', 'styles/navigation.css', 'styles/right-sidebar.css', 'styles/pages/home.css'];
+test('Home layout does not scale the whole Figma frame', () => {
+  const cssFiles = ['styles/base.css', 'styles/shell.css', 'styles/navigation.css', 'styles/pages/home.css'];
   const css = cssFiles.map((file) => fs.readFileSync(path.join(web, file), 'utf8')).join('\n');
-  assert.doesNotMatch(css, /transform:\s*scale/);
+  assert.doesNotMatch(css, /(?:\.app-shell|\.home-page|\.home-main-layout)\s*\{[^}]*transform:\s*scale/s);
 });
 
 test('Home markup uses project SVG assets and keeps business DOM hooks', () => {
@@ -21,9 +21,9 @@ test('Home markup uses project SVG assets and keeps business DOM hooks', () => {
   assert.match(html, /id="home-greeting"/);
   assert.match(html, /id="task-items"/);
   assert.match(html, /id="mini-calendar-grid"/);
-  assert.match(html, /id="snapshot-mood-name"/);
+  assert.doesNotMatch(html, /class="right-sidebar"/);
   assert.match(html, /id="task-empty-state"/);
-  assert.match(html, /\.\/assets\/Segmented Control\/receipt-add\.svg/);
+  assert.match(html, /\.\/assets\/task\/receipt-add\.svg/);
   assert.match(html, /id="home-mood-trigger"/);
   assert.match(html, /id="home-mood-note"/);
   assert.doesNotMatch(html, /class="mood-row"/);
@@ -31,7 +31,8 @@ test('Home markup uses project SVG assets and keeps business DOM hooks', () => {
 
 test('Calendar shows the diary marker before the mood marker', () => {
   const css = fs.readFileSync(path.join(web, 'styles/pages/calendar.css'), 'utf8');
-  assert.match(css, /\.calendar-day\.recorded::before\s*\{[^}]*width:\s*8px[^}]*height:\s*8px[^}]*background:\s*#000/s);
-  assert.match(css, /\.calendar-day\.recorded\.mood-recorded::before\s*\{[^}]*left:\s*calc\(50% - 10px\)/s);
-  assert.match(css, /\.calendar-day\.recorded\.mood-recorded::after\s*\{[^}]*left:\s*calc\(50% \+ 2px\)/s);
+  const source = fs.readFileSync(path.join(web, 'scripts/pages/calendar.js'), 'utf8');
+  assert.match(source, /markers\.append\(diaryMarker\)[\s\S]*markers\.append\(moodMarker\)/);
+  assert.match(css, /\.calendar-day-markers\s*\{[^}]*display:flex[^}]*gap:5px/);
+  assert.match(css, /\.calendar-diary-marker\s*\{[^}]*background:#171717/);
 });

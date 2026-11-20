@@ -1,9 +1,20 @@
 import { dom } from "./dom.js";
-import { createHomeTask } from "./pages/task.js";
 
 // 导航模块：只负责左侧导航和页面显示切换。
 
 export function showPage(pageName) {
+  const homeSidebar = document.querySelector(".home-right-sidebar");
+  const taskSidebar = document.querySelector(".tp-sidebar");
+  const focusCard = document.querySelector(".home-focus-card");
+  const progressCard = document.querySelector(".home-progress-card");
+  if (focusCard && progressCard && homeSidebar && taskSidebar) {
+    if (pageName === "task") taskSidebar.prepend(focusCard, progressCard);
+    else if (pageName === "home") {
+      const upcomingCard = homeSidebar.querySelector(".home-upcoming-card");
+      homeSidebar.insertBefore(focusCard, upcomingCard);
+      homeSidebar.insertBefore(progressCard, upcomingCard);
+    }
+  }
   if (dom.app) dom.app.dataset.activePage = pageName;
 
   dom.navItems.forEach((item) => {
@@ -31,14 +42,9 @@ export function bindNavigationEvents() {
     });
   });
 
-  dom.quickActions.forEach((item) => {
-    item.addEventListener("click", () => showPage(item.dataset.page));
-  });
-
   dom.taskAddButton?.addEventListener("click", () => showPage("task"));
-
-  dom.newTaskQuickAction?.addEventListener("click", () => {
-    showPage("home");
-    createHomeTask();
+  document.querySelector("#home-empty-add-task")?.addEventListener("click", () => {
+    showPage("task");
+    document.querySelector("#task-header-add")?.click();
   });
 }

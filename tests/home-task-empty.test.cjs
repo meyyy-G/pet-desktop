@@ -11,7 +11,7 @@ test('Home task empty state follows persisted row count', () => {
   assert.match(taskSource, /const hasTasks = Boolean\(dom\.taskItems\.querySelector\("\.task-row"\)\)/);
   assert.match(taskSource, /taskItems\.classList\.toggle\("has-tasks", hasTasks\)/);
   assert.match(taskSource, /taskEmptyState\.hidden = hasTasks/);
-  assert.match(taskSource, /!task\.completed && task\.date === today/);
+  assert.match(taskSource, /tasks\.filter\(task => task\.date === today\)/);
   assert.match(homeCss, /\.task-empty-state\s*\{/);
   assert.match(homeCss, /padding:\s*38px 9px/);
   assert.match(homeCss, /\.task-empty-icon[^\{]*\{[^}]*48px/s);
@@ -25,14 +25,14 @@ test('Home task rows render category and priority labels from the shared task da
 });
 
 test('Home task card follows the latest Figma list geometry', () => {
-  assert.match(homeCss, /\.task-card\s*\{[^}]*gap:\s*2px[^}]*padding:\s*20px 7px/s);
-  assert.match(homeCss, /\.task-items\s*\{[^}]*height:\s*354px[^}]*width:\s*303px/s);
-  assert.match(homeCss, /\.task-row\s*\{[^}]*height:\s*60px[^}]*padding:\s*11px 15px[^}]*border-bottom:\s*1px solid #ece8e2/s);
-  assert.match(homeCss, /\.home-task-period\s*\{[^}]*height:\s*24px/s);
+  assert.match(homeCss, /\.home-page \.home-workspace\s*\{[^}]*display:\s*flex[^}]*height:\s*420px[^}]*padding:\s*0 15px/s);
+  assert.match(homeCss, /\.home-workspace \.home-panel\s*\{[^}]*width:\s*350px[^}]*height:\s*420px/s);
+  assert.match(homeCss, /\.home-task-tabs\s*\{[^}]*height:\s*35px/s);
+  assert.match(homeCss, /\.task-row\s*\{[^}]*height:\s*60px[^}]*padding:\s*0 15px[^}]*border:\s*0/s);
 });
 
-test('Populated Home task frame keeps the Day and Night sections inside the Figma card', () => {
-  assert.match(homeCss, /\.task-items\.has-tasks\s*\{[^}]*height:\s*354px[^}]*max-height:\s*none/s);
-  assert.match(taskSource, /const periods = \[/);
-  assert.match(taskSource, /heading\.dataset\.period = period\.key/);
+test('Home task tabs filter the presentation without changing task records', () => {
+  assert.match(taskSource, /homeTaskPeriod === "all" \? todayTasks : todayTasks\.filter\(task => homeTaskPeriod === "completed" \? task\.completed : !task\.completed\)/);
+  assert.match(taskSource, /dom\.taskItems\.append\(\.\.\.visible\.map\(task => taskRow\(task, true\)\)\)/);
+  assert.match(taskSource, /button\.setAttribute\("aria-selected", String\(period === homeTaskPeriod\)\)/);
 });
