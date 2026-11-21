@@ -209,6 +209,9 @@ __marimo__/
 # Personal application data (source-mode runtime directory)
 data/
 
+# Local temporary output and previews
+tmp/
+
 # Local AI agent instructions and role definitions
 AGENTS.md
 .agents/
