@@ -1,15 +1,17 @@
-from PySide6.QtCore import Qt, QTimer
+import math
+
+from PySide6.QtCore import QEvent, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QMouseEvent
-from PySide6.QtWidgets import QApplication, QLabel, QMenu, QWidget
+from PySide6.QtWidgets import QApplication, QLabel, QMenu, QMessageBox, QWidget
 
 from .animation import PetAnimation
-from .behavior_state_machine import BehaviorState, PetBehaviorStateMachine
+from .behavior_state_machine import PetBehaviorStateMachine
+from .pet_controller import PetAction, PetActionRequest, PetController
 from .pet_physics import PetPhysics
 from .pet_state_store import PetStateStore
 from .state_decay import PetStateDecay
 from ..settings import SettingsStore
 from .status_panel import PetNeedIndicator, StatusPanel
-from .need_rules import resolve_need_animation
 from ..diary.diary_window import DiaryWindow
 
 
@@ -23,10 +25,6 @@ class PetWindow(QWidget):
         self.state = loaded_state.state
         self.diary_window = None
 
-        self.woke_from_sleep_on_press = False
-        self.is_diary_page_active = False
-        self.has_started_typing = False
-        self.typing_requested_during_open = False
         self._layout_window_width: int | None = None
         self._layout_pet_x: int | None = None
 
@@ -36,6 +34,11 @@ class PetWindow(QWidget):
 
         self.pet_label = QLabel(self)
         self.pet_label.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.pet_label.setMouseTracking(True)
+        self.pet_label.setCursor(Qt.CursorShape.OpenHandCursor)
+        self.pet_label.installEventFilter(self)
+        self.setMouseTracking(True)
+        self._hover_last_global = None
 
         self.status_panel = StatusPanel(self)
         self.need_indicator = PetNeedIndicator(self)
@@ -50,20 +53,8 @@ class PetWindow(QWidget):
 
         self.animation = PetAnimation(self.settings.scale, self)
         self.animation.frame_changed.connect(self._show_frame)
-        self.animation.state_finished.connect(self._handle_animation_finished)
         self.animation.start()
         self.behavior = PetBehaviorStateMachine(self.animation, self)
-        self.behavior.update_need_animation(
-            resolve_need_animation(
-                self.state.satiety,
-                self.state.mood,
-                self.state.energy,
-            )
-        )
-        if self.behavior.is_sick:
-            self.need_indicator.set_care_hint("sick")
-        self.behavior.treatment_due.connect(self._complete_treatment)
-
         self.state_decay = PetStateDecay(
             self.state,
             loaded_state.times,
@@ -73,15 +64,41 @@ class PetWindow(QWidget):
         self.state_decay.values_changed.connect(
             self.need_indicator.update_values
         )
-        self.state_decay.values_changed.connect(
-            self._update_need_animation
+        self.controller = PetController(
+            self.state,
+            self.behavior,
+            self.state_decay,
+            self,
+        )
+        self.controller.status_requested.connect(self.status_panel.show_status)
+        self.controller.care_hint_changed.connect(self.need_indicator.set_care_hint)
+        self.controller.care_hint_requested.connect(self.need_indicator.show_care_hint)
+        self.controller.position_save_requested.connect(self._save_position)
+        self.controller.wake_confirmation_requested.connect(
+            self._confirm_wake_sleeping
+        )
+        self.state_decay.values_changed.connect(self.controller.update_need_values)
+        self.behavior.treatment_due.connect(self.controller.complete_treatment)
+        self.animation.state_finished.connect(self.controller.animation_finished)
+        self.controller.update_need_values(
+            self.state.satiety,
+            self.state.mood,
+            self.state.energy,
         )
         self.state_decay.save()
 
         self.physics = PetPhysics(self, self)
-        self.physics.clicked.connect(self._touch_cat)
-        self.physics.drag_started.connect(self._start_carry)
-        self.physics.landed.connect(self._finish_landing)
+        self.physics.clicked.connect(
+            lambda: self.controller.request(
+                PetActionRequest(PetAction.SHOW_STATUS)
+            )
+        )
+        self.physics.drag_started.connect(
+            lambda: self.controller.request(PetActionRequest(PetAction.CARRY_STARTED))
+        )
+        self.physics.landed.connect(
+            lambda: self.controller.request(PetActionRequest(PetAction.CARRY_FINISHED))
+        )
 
         self.move(self.settings.x, self.settings.y)
         QTimer.singleShot(0, self._move_inside_available_screen)
@@ -167,19 +184,49 @@ class PetWindow(QWidget):
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            self.woke_from_sleep_on_press = (
-                self.behavior.state is BehaviorState.TEMPORARY
-                and self.animation.state == "sleeping"
-            )
-
-            if self.woke_from_sleep_on_press:
-                self._register_interaction()
-                self.state.current_animation = "idle"
-                self._show_status()
-
             self.physics.press(event)
 
         super().mousePressEvent(event)
+
+    def eventFilter(self, watched, event) -> bool:
+        if watched is self.pet_label:
+            if event.type() == QEvent.Type.MouseButtonPress:
+                self._finish_hover_interaction()
+                self.pet_label.setCursor(Qt.CursorShape.ClosedHandCursor)
+            elif event.type() == QEvent.Type.MouseButtonRelease:
+                self.pet_label.setCursor(Qt.CursorShape.OpenHandCursor)
+            elif event.type() == QEvent.Type.MouseMove:
+                if event.buttons() != Qt.MouseButton.NoButton:
+                    self._finish_hover_interaction()
+                elif self._point_hits_pet(event.position().toPoint()):
+                    current = event.globalPosition()
+                    if self._hover_last_global is not None:
+                        distance = math.hypot(
+                            current.x() - self._hover_last_global.x(),
+                            current.y() - self._hover_last_global.y(),
+                        )
+                        self.controller.request(PetActionRequest(
+                            PetAction.HOVER_MOVED,
+                            payload={"distance": distance},
+                        ))
+                    self._hover_last_global = current
+                else:
+                    self._finish_hover_interaction()
+            elif event.type() == QEvent.Type.Leave:
+                self._finish_hover_interaction()
+        return super().eventFilter(watched, event)
+
+    def _point_hits_pet(self, point) -> bool:
+        pixmap = self.pet_label.pixmap()
+        if pixmap is None or pixmap.isNull():
+            return False
+        if not (0 <= point.x() < pixmap.width() and 0 <= point.y() < pixmap.height()):
+            return False
+        return pixmap.toImage().pixelColor(point).alpha() > 16
+
+    def _finish_hover_interaction(self) -> None:
+        self._hover_last_global = None
+        self.controller.request(PetActionRequest(PetAction.HOVER_FINISHED))
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
         if event.buttons() & Qt.MouseButton.LeftButton:
@@ -199,12 +246,13 @@ class PetWindow(QWidget):
 
     def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
-            if self._care_interaction_blocked():
+            if not self.controller.interaction_allowed():
                 event.accept()
                 return
 
             self.physics.handle_double_click()
-            self._register_interaction()
+            if not self.controller.is_sleeping:
+                self.controller.register_interaction()
             self._open_diary_window()
             event.accept()
             return
@@ -263,142 +311,27 @@ class PetWindow(QWidget):
         menu.addAction(action)
 
     def _feed(self) -> None:
-        if self._care_interaction_blocked():
-            return
-
-        old_satiety = self.state.satiety
-        self.state.feed()
-        self._show_status()
-        self._play_temporary(self.state.current_animation)
-        self.state_decay.commit_manual_change(old_satiety)
+        self.controller.request(PetActionRequest(PetAction.FEED))
 
     def _play(self) -> None:
-        if self._care_interaction_blocked():
-            return
-
-        if not self.state.can_play():
-            self._show_status()
-            return
-
-        old_satiety = self.state.satiety
-        self.state.play()
-        self._show_status()
-        self._play_temporary(self.state.current_animation)
-        self.state_decay.commit_manual_change(old_satiety)
+        self.controller.request(PetActionRequest(PetAction.PLAY))
 
     def _sleep(self) -> None:
-        if self._care_interaction_blocked():
-            return
-
-        old_satiety = self.state.satiety
-        self.state.sleep()
-        self._show_status()
-        self.behavior.play_temporary("sleeping")
-        self.state_decay.commit_manual_change(old_satiety)
-
-    def _touch_cat(self) -> None:
-        self._save_position()
-
-        if self._care_interaction_blocked():
-            self.woke_from_sleep_on_press = False
-            return
-
-        if self.woke_from_sleep_on_press:
-            self.woke_from_sleep_on_press = False
-            return
-
-        old_satiety = self.state.satiety
-        self.state.touch()
-        self._show_status()
-        self.behavior.play_touch(1800)
-        self.state_decay.commit_manual_change(old_satiety)
-
-    def _start_carry(self) -> None:
-        self.woke_from_sleep_on_press = False
-        self._register_interaction()
-        self.state.current_animation = "idle"
-        self.behavior.play_temporary("carry")
-
-    def _finish_landing(self) -> None:
-        self._restore_after_carry()
-        self._save_position()
-
-    def _restore_after_carry(self) -> None:
-        """拖拽结束后，根据日记窗口上下文恢复正确动画。"""
-        diary_is_open = (
-            self.diary_window is not None
-            and self.diary_window.isVisible()
-        )
-
-        if not diary_is_open:
-            self.behavior.finish_temporary()
-            return
-
-        if self.is_diary_page_active and self.has_started_typing:
-            self.behavior.update_temporary_animation("diary_typing")
-            return
-
-        self.behavior.update_temporary_animation("diary_waiting")
-
-        # 拖拽打断日记打开动画时，继续执行期间排队的首次输入请求。
-        if (
-            self.is_diary_page_active
-            and self.typing_requested_during_open
-        ):
-            self.typing_requested_during_open = False
-            self._start_typing_animation()
-
-    def _show_status(self) -> None:
-        self.status_panel.show_status(
-            satiety=self.state.satiety,
-            mood=self.state.mood,
-            energy=self.state.energy,
-        )
-
-    def _update_need_animation(
-        self,
-        satiety: int,
-        mood: int,
-        energy: int,
-    ) -> None:
-        need_animation = resolve_need_animation(satiety, mood, energy)
-        self.behavior.update_need_animation(need_animation)
-        if self.behavior.is_sick:
-            self.need_indicator.set_care_hint("sick")
-
-    def _care_interaction_blocked(self) -> bool:
-        """统一拦截 Sick/Treating 期间除 Carry 外的普通互动。"""
-        if not self.behavior.is_care_locked:
-            return False
-
-        self.need_indicator.show_care_hint()
-        return True
+        self.controller.request(PetActionRequest(PetAction.SLEEP))
 
     def _treat(self) -> None:
-        if not self.behavior.start_treating():
-            return
+        self.controller.request(PetActionRequest(PetAction.TREAT))
 
-        self.need_indicator.set_care_hint("treating")
-
-    def _complete_treatment(self) -> None:
-        if not self.behavior.is_treating:
-            return
-
-        self.state.satiety = 75
-        self.state.mood = 75
-        self.state.energy = 75
-        self.state.current_animation = "idle"
-        self.behavior.complete_treatment()
-        self.need_indicator.set_care_hint(None)
-        self.state_decay.commit_manual_change(self.state.satiety)
-
-    def _register_interaction(self) -> None:
-        """点击或拖拽重置行为无互动时间；数值衰减不受影响。"""
-        self.behavior.register_interaction()
-        self.state_decay.register_interaction()
-
-    def _play_temporary(self, state: str, duration_ms: int = 2500) -> None:
-        self.behavior.play_temporary(state, duration_ms)
+    def _confirm_wake_sleeping(self) -> None:
+        result = QMessageBox.question(
+            self,
+            "唤醒小猫",
+            "小猫正在睡觉，要现在唤醒它吗？",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if result == QMessageBox.StandardButton.Yes:
+            self.controller.wake_sleeping()
 
     def _toggle_always_on_top(self, enabled: bool) -> None:
         self.settings.always_on_top = enabled
@@ -428,104 +361,23 @@ class PetWindow(QWidget):
                 self._finish_diary_animation
             )
 
-        self.is_diary_page_active = (
-            self.diary_window.bridge.current_page == "diary"
-        )
-        self.has_started_typing = False
-        self.typing_requested_during_open = False
-        self.behavior.play_temporary("diary_open_enter")
+        self.controller.request(PetActionRequest(
+            PetAction.OPEN_DIARY,
+            payload={"page": self.diary_window.bridge.current_page},
+        ))
 
         self.diary_window.show()
         self.diary_window.raise_()
         self.diary_window.activateWindow()
 
     def _start_typing_animation(self) -> None:
-        if not self.is_diary_page_active:
-            return
-
-        if self.has_started_typing:
-            return
-
-        if self.animation.state in ("diary_open_enter", "diary_open_exit"):
-            self.typing_requested_during_open = True
-            return
-
-        self.has_started_typing = True
-        self.behavior.update_temporary_animation("diary_typing_enter")
+        self.controller.request(PetActionRequest(PetAction.DIARY_TYPING))
 
     def _finish_diary_animation(self) -> None:
-        self.is_diary_page_active = False
-        self.has_started_typing = False
-        self.typing_requested_during_open = False
-        self.behavior.finish_temporary()
+        self.controller.request(PetActionRequest(PetAction.DIARY_CLOSED))
 
     def _handle_diary_page_changed(self, page_name: str) -> None:
-        is_diary_page = page_name == "diary"
-
-        if is_diary_page:
-            self.is_diary_page_active = True
-            self.has_started_typing = False
-            if self.animation.state not in (
-                "diary_open_enter",
-                "diary_open_exit",
-            ):
-                self.behavior.update_temporary_animation("diary_waiting")
-            return
-
-        was_typing = self.is_diary_page_active and self.has_started_typing
-        was_in_typing_animation = self.animation.state in (
-            "diary_typing_enter",
-            "diary_typing",
-        )
-
-        self.is_diary_page_active = False
-        self.has_started_typing = False
-        self.typing_requested_during_open = False
-
-        if self.animation.state in ("diary_open_enter", "diary_open_exit"):
-            return
-
-        if was_typing or was_in_typing_animation:
-            self.behavior.update_temporary_animation("diary_typing_exit")
-        elif self.diary_window is not None and self.diary_window.isVisible():
-            self.behavior.update_temporary_animation("diary_waiting")
-
-    def _handle_animation_finished(self, state: str) -> None:
-        if state == "diary_open_enter":
-            if self.diary_window is not None and self.diary_window.isVisible():
-                self.behavior.update_temporary_animation("diary_open_exit")
-            else:
-                self.behavior.finish_temporary()
-            return
-
-        if state == "diary_open_exit":
-            if self.diary_window is None or not self.diary_window.isVisible():
-                self.behavior.finish_temporary()
-                return
-
-            self.behavior.update_temporary_animation("diary_waiting")
-
-            if self.is_diary_page_active and self.typing_requested_during_open:
-                self.typing_requested_during_open = False
-                self._start_typing_animation()
-            return
-
-        if state == "diary_typing_enter":
-            if (
-                self.diary_window is not None
-                and self.diary_window.isVisible()
-                and self.is_diary_page_active
-                and self.has_started_typing
-            ):
-                self.behavior.update_temporary_animation("diary_typing")
-            else:
-                self.behavior.update_temporary_animation("diary_waiting")
-
-            return
-
-        if state == "diary_typing_exit":
-            if self.diary_window is not None and self.diary_window.isVisible():
-                self.behavior.update_temporary_animation("diary_waiting")
-            else:
-                self.behavior.finish_temporary()
-            return
+        self.controller.request(PetActionRequest(
+            PetAction.DIARY_PAGE_CHANGED,
+            payload={"page": page_name},
+        ))

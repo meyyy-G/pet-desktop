@@ -16,6 +16,8 @@ class PetAnimation(QObject):
         "diary_open_exit",
         "diary_typing_enter",
         "diary_typing_exit",
+        "settlement",
+        "hover_exit",
     }
 
     FRAME_PATTERN = {
@@ -26,7 +28,6 @@ class PetAnimation(QObject):
         "eat": ("interactive_rect/feed", "eat_rect_", 15),
         "play": ("interactive_rect/play", "dance_", 4),
         "sleeping": ("interactive_rect/sleep", "sleeping_", 4),
-        "touch": ("interactive_rect/touch", "tch_rect_", 12),
         "carry": ("interactive_rect/carry", "carry_cat_", 12),
         "upset": ("need_rect/upset", "upset_", 5),
         "angry": ("need_rect/angry", "angry_", 9),
@@ -35,6 +36,8 @@ class PetAnimation(QObject):
         "cry": ("need_rect/cry", "cry_", 4),
         "sick": ("need_rect/sick", "sick_", 4),
         "treating": ("need_rect/Treating", "treating_", 5),
+        "settlement": ("interactive_rect/shy", "shy_rect_", 12),
+        "hover": ("interactive_rect/Hover", "Hover_", 16),
     }
 
     STATIC_FRAMES = {
@@ -43,14 +46,13 @@ class PetAnimation(QObject):
 
     STATE_INTERVALS = {
         # 自然状态统一为每帧 180ms，避免切换时忽快忽慢。
-        "idle": 540,
+        "idle": 360,
         "sitting": 180,
         "gaping": 180,
         "laydown": 180,
         "eat": 120,
         "play": 130,
         "sleeping": 180,
-        "touch": 140,
         "carry": 140,
         "upset": 240,
         "angry": 240,
@@ -61,6 +63,9 @@ class PetAnimation(QObject):
         "sick": 240,
         # 治疗动画单独放慢，不影响其他状态的播放速度。
         "treating": 450,
+        "settlement": 120,
+        "hover": 160,
+        "hover_exit": 220,
 
         "diary_open_enter": 150,
         "diary_open_exit": 150,
@@ -77,6 +82,7 @@ class PetAnimation(QObject):
         self.state = "idle"
         self.frame_index = 0
         self.has_finished_current_state = False
+        self.manual_frame_control = False
 
         self.timer = QTimer(self)#创建一个定时器
         self.timer.timeout.connect(self.next_frame)#在timer时间内调用一次
@@ -88,21 +94,32 @@ class PetAnimation(QObject):
         self.timer.start(interval_ms)#间隔毫秒
         self.next_frame()
 
-    def set_state(self, state: str) -> None:
+    def set_state(self, state: str, *, manual: bool = False) -> None:
         if state not in self.frames_by_state:
             state = "idle"
 
-        if self.state == state:
+        if self.state == state and self.manual_frame_control == manual:
             return
 
         self.state = state
+        self.manual_frame_control = manual
         self.frame_index = 0
         self.has_finished_current_state = False
 
         interval = self.STATE_INTERVALS.get(state, 140)
         self.timer.setInterval(interval)
 
-        self.next_frame()
+        if not manual:
+            self.next_frame()
+
+    def set_manual_frame(self, frame_index: int) -> None:
+        if not self.manual_frame_control:
+            return
+        frames = self.frames_by_state.get(self.state) or []
+        if not frames:
+            return
+        self.frame_index = max(0, min(len(frames) - 1, frame_index))
+        self.frame_changed.emit(frames[self.frame_index])
 
     def next_frame(self) -> None:
         frames = (
@@ -114,6 +131,9 @@ class PetAnimation(QObject):
             return
 
         self.frame_changed.emit(frames[self.frame_index])
+
+        if self.manual_frame_control:
+            return
 
         if self.state in self.ONE_SHOT_STATES:
             if self.frame_index < len(frames) - 1:
@@ -195,6 +215,14 @@ class PetAnimation(QObject):
             "hide_",
             1,
             12,
+        )
+
+        hover_folder = (
+            ASSETS_DIR / "animations" / "cat" / "interactive_rect" / "Hover"
+        )
+        frames_by_state["hover_exit"] = (
+            self._load_sequence_range(hover_folder, "Hover_", 13, 16)
+            + self._load_sequence_range(hover_folder, "Hover_", 1, 4)
         )
 
         if not frames_by_state["idle"]:

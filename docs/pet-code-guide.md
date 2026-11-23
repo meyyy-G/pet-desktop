@@ -1,6 +1,38 @@
 # Pet 代码文件完整导览
 
-更新时间：2026-09-27
+更新时间：2026-11-23
+
+> 2026-11-23 架构更新：Pet 行为协调已经从 `PetWindow` 提取到
+> `PetController`。本文后续保留的逐文件旧分析用于追溯重构前行为；涉及
+> `PetWindow` 业务协调、Touch/RECOVERING、`PetState.current_animation`
+> 的描述已经不再代表当前代码。
+
+## 当前架构速览
+
+```text
+PetWindow（窗口、输入、菜单、Overlay、DiaryWindow 生命周期）
+  ├─ PetPhysics（点击、双击、拖拽、落地）
+  └─ PetController（统一动作请求与跨模块协调）
+       ├─ action_rules（动作数值效果与持续时间）
+       ├─ PetState / PetStateDecay / PetStateStore
+       ├─ PetBehaviorStateMachine
+       │    └─ PetAnimation
+       └─ need_rules（身体动画与提示规则）
+```
+
+当前职责：
+
+- `pet_window.py`：只处理 QWidget、鼠标输入、菜单、弹窗和 UI 布局；
+- `pet_controller.py`：Feed、Play、Sleep、状态展示、Carry、Care、Diary；
+- `action_rules.py`：集中配置动作加点和持续时间；
+- `pet_state.py`：三个需求值及通用 `apply()`；
+- `behavior_state_machine.py`：优先级、抢占、自然行为和 Temporary/Care；
+- `need_rules.py`：身体 Need 动画和头顶提示判断；
+- `status_panel.py`：只负责渲染状态条和提示图。
+
+统一入口为 `PetController.request(PetActionRequest(...))`。`ActionSource`
+已预留 `USER`、`SYSTEM`、`AI`，当前没有接入 AI。单击对应
+`SHOW_STATUS`，只显示 UI；睡眠固定 30 分钟，单击需确认后才能唤醒。
 
 这份文档回答三个问题：Pet 由哪些文件组成、每个文件具体负责什么、一次用户操作如何在这些文件之间流动。问题诊断与整改优先级另见 `docs/pet-system-analysis.md`。
 
@@ -11,7 +43,9 @@
 ```text
 src/desktop_pet/pet/
 ├── __init__.py                  # Python 包标记，目前为空
-├── pet_window.py                # Pet 总控制器与顶层透明窗口
+├── pet_window.py                # 顶层透明窗口、输入和 UI
+├── pet_controller.py            # 行为请求与跨模块协调
+├── action_rules.py              # 动作数值效果与持续时间
 ├── animation.py                 # 序列帧加载和播放
 ├── behavior_state_machine.py    # 行为选择、抢占和恢复
 ├── pet_state.py                 # 饱食/心情/精力的数值模型

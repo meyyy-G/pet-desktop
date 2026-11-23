@@ -3,6 +3,7 @@ from PySide6.QtGui import QPainter, QPixmap
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ..paths import ASSETS_DIR
+from .need_rules import resolve_persistent_hint, resolve_transient_hint
 
 
 class ImageProgressBar(QWidget):
@@ -263,34 +264,14 @@ class PetNeedIndicator(QLabel):
         mood: int,
         energy: int,
     ) -> str | None:
-        if satiety <= 15 or mood <= 15:
-            return "sick"
-        if satiety <= 25 and mood <= 25 and energy <= 25:
-            return "upset"
-        if satiety <= 25:
-            return "angry"
-        if satiety <= 50:
-            return "hungry"
-        if energy <= 25:
-            return "sleep"
-        if mood <= 50:
-            return "upset"
-        return None
+        return resolve_persistent_hint(satiety, mood, energy)
 
     @staticmethod
     def _transient_hint(
         old_values: tuple[int, int, int],
         new_values: tuple[int, int, int],
     ) -> str | None:
-        old_satiety, _, old_energy = old_values
-        satiety, _, energy = new_values
-
-        # 同一次更新只显示一个提示：hungry > sleep > upset。
-        if old_satiety > 75 >= satiety:
-            return "hungry"
-        if old_energy > 50 >= energy:
-            return "sleep"
-        return None
+        return resolve_transient_hint(old_values, new_values)
 
     def _show_hint(self, hint: str, persistent: bool) -> None:
         pixmap = self._pixmaps.get(hint)

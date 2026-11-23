@@ -2,6 +2,12 @@
 
 更新时间：2026-09-27
 
+> 历史说明：本文分析的是 2026-09-27 的重构前实现。2026-11-23 已引入
+> `PetController`、`action_rules.py` 和 Pet 自动化测试，并移除
+> `PetState.current_animation`、单击 Touch 动作及 Touch/RECOVERING 恢复链。
+> 本文的问题清单仍可用于历史追踪，但“当前结构”请以
+> `docs/pet-code-guide.md` 顶部的架构速览和仓库代码为准。
+
 ## 1. 结论
 
 当前 Pet 系统已经具备完整的功能拼图，但还没有形成一个真正的“单一行为决策系统”。表面上动画由 `PetBehaviorStateMachine` 统一管理，实际表现仍同时受到 `PetWindow` 的页面上下文、`PetStateDecay` 的数值变化、`PetNeedIndicator` 的另一套需求规则、`PetPhysics` 的拖拽/落地定时器以及 `PetAnimation` 的逐帧播放控制影响。

@@ -32,6 +32,63 @@ PetDesktop 希望把桌面陪伴与日常记录放进同一个轻量空间里：
 
 ---
 
+## 桌面小猫
+
+### 自然行为
+
+<p align="center">
+  <img src="assets/images/1.gif" width="150" alt="小猫自然行为 1">
+  <img src="assets/images/2.gif" width="150" alt="小猫自然行为 2">
+  <img src="assets/images/3.gif" width="150" alt="小猫自然行为 3">
+</p>
+
+小猫拥有独立的自然行为状态机。随着无互动时间增加，会在 Looking、Sitting、Gaping、Laydown 等状态之间切换；用户再次互动后，会自然恢复到合适状态。
+
+### 与小猫的互动
+
+<p align="center">
+  <img src="assets/images/4.gif" width="150" alt="与小猫的互动">
+  <img src="assets/images/touch.gif" width="150" alt="抚摸小猫">
+  <img src="assets/images/互动.gif" width="260" alt="与小猫的互动">
+</p>
+
+- 单击小猫，或在小猫身上移动鼠标进行抚摸，会触发对应的互动动画
+- 拖动小猫时显示携带状态，释放后产生下落与落地效果
+- 双击小猫打开手帐
+- 右键菜单提供喂食、玩耍、睡觉、治疗、置顶和退出等操作
+- 系统托盘可打开手帐或彻底退出应用
+
+### 需求与照顾
+
+<p align="center">
+  <img src="assets/images/hungry.gif" width="125" alt="饥饿">
+  <img src="assets/images/sleepy.gif" width="125" alt="困倦">
+  <img src="assets/images/upset.gif" width="125" alt="低落">
+  <img src="assets/images/angry.gif" width="125" alt="生气">
+  <img src="assets/images/cry.gif" width="125" alt="哭泣">
+</p>
+
+饱食度、心情值和精力值会随时间变化，并保存在本机。小猫会根据最需要关注的状态显示对应动画和提示，互动也会受到当前数值约束。
+
+### 生病与治疗
+
+<p align="center">
+  <img src="assets/images/sick.gif" width="170" alt="小猫生病">
+  <img src="assets/images/heal.gif" width="170" alt="小猫治疗">
+</p>
+
+需求状态持续过低时，小猫可能进入生病状态。治疗期间会锁定相应照顾流程，完成后恢复正常行为。
+
+### 陪你写日记
+
+<p align="center">
+  <img src="assets/images/小猫陪你写.gif" width="900" alt="小猫陪你写日记">
+</p>
+
+打开手帐或在 Diary 中输入内容时，小猫会切换到相应陪伴动画；离开页面后回到当前应有的桌宠状态。
+
+---
+
 ## 界面预览
 
 ### Home · 今日概览
@@ -103,63 +160,6 @@ PetDesktop 希望把桌面陪伴与日常记录放进同一个轻量空间里：
 ### Focus · 规划中
 
 导航栏中的 Focus 页面目前处于禁用状态；Home 中的 Focus 卡片仅提供界面交互预览，还不是完整的计时与统计系统。
-
----
-
-## 桌面小猫
-
-### 自然行为
-
-<p align="center">
-  <img src="assets/images/1.gif" width="150" alt="小猫自然行为 1">
-  <img src="assets/images/2.gif" width="150" alt="小猫自然行为 2">
-  <img src="assets/images/3.gif" width="150" alt="小猫自然行为 3">
-  <img src="assets/images/4.gif" width="150" alt="小猫自然行为 4">
-</p>
-
-小猫拥有独立的自然行为状态机。随着无互动时间增加，会在 Looking、Sitting、Gaping、Laydown 等状态之间切换；用户再次互动后，会自然恢复到合适状态。
-
-### 拖拽与日常互动
-
-<p align="center">
-  <img src="assets/images/互动.gif" width="260" alt="桌宠拖拽与互动">
-</p>
-
-- 单击或抚摸小猫会触发互动动画
-- 拖动小猫时显示携带状态，释放后产生下落与落地效果
-- 双击小猫打开手帐
-- 右键菜单提供喂食、玩耍、睡觉、治疗、置顶和退出等操作
-- 系统托盘可打开手帐或彻底退出应用
-
-### 需求与照顾
-
-<p align="center">
-  <img src="assets/images/hungry.gif" width="125" alt="饥饿">
-  <img src="assets/images/sleepy.gif" width="125" alt="困倦">
-  <img src="assets/images/upset.gif" width="125" alt="低落">
-  <img src="assets/images/angry.gif" width="125" alt="生气">
-  <img src="assets/images/cry.gif" width="125" alt="哭泣">
-</p>
-
-饱食度、心情值和精力值会随时间变化，并保存在本机。小猫会根据最需要关注的状态显示对应动画和提示，互动也会受到当前数值约束。
-
-### 生病与治疗
-
-<p align="center">
-  <img src="assets/images/sick.gif" width="170" alt="小猫生病">
-  <img src="assets/images/heal.gif" width="170" alt="小猫治疗">
-</p>
-
-需求状态持续过低时，小猫可能进入生病状态。治疗期间会锁定相应照顾流程，完成后恢复正常行为。
-
-### 陪你写日记
-
-<p align="center">
-  <img src="assets/images/box_cat.gif" width="240" alt="盒子猫手帐陪伴动画">
-  <img src="assets/images/小猫陪你写.gif" width="240" alt="小猫陪你写日记">
-</p>
-
-打开手帐或在 Diary 中输入内容时，小猫会切换到相应陪伴动画；离开页面后回到当前应有的桌宠状态。
 
 ---
 

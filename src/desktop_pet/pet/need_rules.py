@@ -40,3 +40,37 @@ def resolve_need_animation(
                 return animation
 
     return None
+
+
+def resolve_persistent_hint(
+    satiety: int,
+    mood: int,
+    energy: int,
+) -> str | None:
+    """Preserve the existing thought-bubble rules independently of body animation."""
+    if satiety <= 15 or mood <= 15:
+        return "sick"
+    if satiety <= 25 and mood <= 25 and energy <= 25:
+        return "upset"
+    if satiety <= 25:
+        return "angry"
+    if satiety <= 50:
+        return "hungry"
+    if energy <= 25:
+        return "sleep"
+    if mood <= 50:
+        return "upset"
+    return None
+
+
+def resolve_transient_hint(
+    old_values: tuple[int, int, int],
+    new_values: tuple[int, int, int],
+) -> str | None:
+    old_satiety, _, old_energy = old_values
+    satiety, _, energy = new_values
+    if old_satiety > 75 >= satiety:
+        return "hungry"
+    if old_energy > 50 >= energy:
+        return "sleep"
+    return None

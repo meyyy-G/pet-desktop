@@ -40,9 +40,6 @@ class PetStateDecay(QObject):
         self.timer.timeout.connect(self.check_now)
         self.timer.start()
 
-    def register_interaction(self, now: datetime | None = None) -> None:
-        """保留现有调用接口；互动不再影响属性自然衰减。"""
-
     def commit_manual_change(self, old_satiety: int) -> None:
         """喂食、玩耍等操作修改数值后发出最新值并保存。"""
         self.values_changed.emit(

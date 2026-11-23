@@ -15,7 +15,6 @@ class BehaviorState(Enum):
     GAPING = "gaping"
     LAYDOWN = "laydown"
     NEED = "need"
-    RECOVERING = "recovering"
     TEMPORARY = "temporary"
     SICK = "sick"
     TREATING = "treating"
@@ -26,13 +25,13 @@ class PetBehaviorStateMachine(QObject):
 
     state_changed = Signal(str)
     treatment_due = Signal()
+    temporary_finished = Signal(str, bool)
 
     # 无互动 10/20/30 分钟后依次进入坐下、打哈欠和躺下状态。
     SITTING_AFTER_MS = 10 * 60 * 1000
     GAPING_AFTER_MS = 20 * 60 * 1000
     LAYDOWN_AFTER_MS = 30 * 60 * 1000
     INACTIVITY_CHECK_MS = 250
-    TOUCH_LAYDOWN_SITTING_MS = 20_000
     TREATMENT_DURATION_MS = 30 * 60 * 1000
 
     def __init__(self, animation: PetAnimation, parent=None):
@@ -45,10 +44,8 @@ class PetBehaviorStateMachine(QObject):
         self._played_inactivity_gaping = False
         self._pending_natural_gaping = False
         self._need_animation: str | None = None
-        self._temporary_resets_inactivity = True
-        self._touch_recovery_target: BehaviorState | None = None
-        self._recovery_target: BehaviorState | None = None
         self._care_state: BehaviorState | None = None
+        self._temporary_resets_inactivity = True
 
         # 整个无互动系统只使用这一个周期 Timer。
         self.inactivity_timer = QTimer(self)
@@ -59,13 +56,7 @@ class PetBehaviorStateMachine(QObject):
         # 临时动作有独立的结束计时，不参与计算无互动时间。
         self.temporary_timer = QTimer(self)
         self.temporary_timer.setSingleShot(True)
-        self.temporary_timer.timeout.connect(self.finish_temporary)
-
-        self.touch_recovery_timer = QTimer(self)
-        self.touch_recovery_timer.setSingleShot(True)
-        self.touch_recovery_timer.timeout.connect(
-            self._finish_touch_recovery
-        )
+        self.temporary_timer.timeout.connect(self.complete_temporary)
 
         self.treatment_timer = QTimer(self)
         self.treatment_timer.setSingleShot(True)
@@ -77,6 +68,10 @@ class PetBehaviorStateMachine(QObject):
     @property
     def inactivity_ms(self) -> int:
         return max(0, self._inactivity_clock.elapsed())
+
+    @property
+    def current_animation(self) -> str:
+        return self.animation.state
 
     @property
     def is_care_locked(self) -> bool:
@@ -102,7 +97,6 @@ class PetBehaviorStateMachine(QObject):
         self.temporary_timer.stop()
         self._pending_natural_gaping = False
         self._played_inactivity_gaping = False
-        self._cancel_touch_recovery()
         self._inactivity_clock.restart()
         self._resume_current_state()
 
@@ -112,7 +106,6 @@ class PetBehaviorStateMachine(QObject):
             return False
 
         self.temporary_timer.stop()
-        self._cancel_touch_recovery()
         self._care_state = BehaviorState.TREATING
         self._transition(BehaviorState.TREATING, "treating")
         self.treatment_timer.start(self.TREATMENT_DURATION_MS)
@@ -129,7 +122,6 @@ class PetBehaviorStateMachine(QObject):
         self._need_animation = None
         self._pending_natural_gaping = False
         self._played_inactivity_gaping = False
-        self._cancel_touch_recovery()
         self._inactivity_clock.restart()
         self._transition(BehaviorState.IDLE, "idle")
 
@@ -139,31 +131,36 @@ class PetBehaviorStateMachine(QObject):
         duration_ms: int | None = None,
         *,
         reset_inactivity: bool = True,
-        touch_recovery_target: BehaviorState | None = None,
     ) -> bool:
         """播放临时动画；有时长时自动结束，无时长时等待外部结束。"""
         if self.is_care_locked and animation_state != "carry":
             return False
 
         self.temporary_timer.stop()
-        self._cancel_touch_recovery()
         self._temporary_resets_inactivity = reset_inactivity
-        self._touch_recovery_target = touch_recovery_target
         self._transition(BehaviorState.TEMPORARY, animation_state)
 
         if duration_ms is not None:
             self.temporary_timer.start(duration_ms)
         return True
 
-    def play_touch(self, duration_ms: int) -> None:
-        """播放 Touch，保留无互动计时并记住开始前的自然姿势。"""
-        target = self._natural_pose_for_elapsed(self.inactivity_ms)
-        self.play_temporary(
-            "touch",
-            duration_ms,
-            reset_inactivity=False,
-            touch_recovery_target=target,
-        )
+    def play_manual_temporary(
+        self,
+        animation_state: str,
+        *,
+        reset_inactivity: bool = False,
+    ) -> bool:
+        if self.is_care_locked:
+            return False
+        self.temporary_timer.stop()
+        self._temporary_resets_inactivity = reset_inactivity
+        self.state = BehaviorState.TEMPORARY
+        self.animation.set_state(animation_state, manual=True)
+        self.state_changed.emit(BehaviorState.TEMPORARY.value)
+        return True
+
+    def set_manual_frame(self, frame_index: int) -> None:
+        self.animation.set_manual_frame(frame_index)
 
     def update_temporary_animation(self, animation_state: str) -> None:
         """临时流程内部切换动画，例如日记的进入、等待和打字阶段。"""
@@ -176,39 +173,47 @@ class PetBehaviorStateMachine(QObject):
 
         self.animation.set_state(animation_state)
 
+    def complete_temporary(self) -> None:
+        """Finish a temporary action because its configured duration elapsed."""
+        self._finish_temporary(completed=True)
+
     def finish_temporary(self) -> None:
-        """结束临时动作，并按该动作的计时策略恢复后续状态。"""
+        """Interrupt a temporary action and restore the appropriate state."""
+        self._finish_temporary(completed=False)
+
+    def _finish_temporary(self, *, completed: bool) -> None:
         if self.state is not BehaviorState.TEMPORARY:
             return
 
+        finished_animation = self.current_animation
         self.temporary_timer.stop()
-        resets_inactivity = self._temporary_resets_inactivity
-        touch_recovery_target = self._touch_recovery_target
-        self._temporary_resets_inactivity = True
-        self._touch_recovery_target = None
         should_play_pending_gaping = self._pending_natural_gaping
         self._pending_natural_gaping = False
 
+        resets_inactivity = self._temporary_resets_inactivity
+        self._temporary_resets_inactivity = True
         if resets_inactivity:
             self._played_inactivity_gaping = False
             self._inactivity_clock.restart()
 
         if self._care_state is not None:
             self._transition(self._care_state, self._care_state.value)
+            self.temporary_finished.emit(finished_animation, completed)
             return
 
         if self._need_animation is not None:
             self._transition(BehaviorState.NEED, self._need_animation)
+            self.temporary_finished.emit(finished_animation, completed)
             return
 
-        if not resets_inactivity and touch_recovery_target is not None:
-            self._start_touch_recovery(touch_recovery_target)
-            return
-
-        self._transition(BehaviorState.IDLE, "idle")
+        if resets_inactivity:
+            self._transition(BehaviorState.IDLE, "idle")
+        else:
+            self._resume_natural_behavior()
 
         if should_play_pending_gaping:
             self._start_gaping(from_inactivity=False)
+        self.temporary_finished.emit(finished_animation, completed)
 
     def update_need_animation(self, animation_state: str | None) -> None:
         """Update the body need animation without interrupting temporary actions."""
@@ -221,7 +226,6 @@ class PetBehaviorStateMachine(QObject):
                 and self.animation.state == "carry"
             ):
                 self.temporary_timer.stop()
-                self._cancel_touch_recovery()
                 self._transition(BehaviorState.SICK, "sick")
             return
 
@@ -232,7 +236,6 @@ class PetBehaviorStateMachine(QObject):
             return
 
         if animation_state is not None:
-            self._cancel_touch_recovery()
             self._transition(BehaviorState.NEED, animation_state)
             return
 
@@ -256,7 +259,6 @@ class PetBehaviorStateMachine(QObject):
             BehaviorState.TEMPORARY,
             BehaviorState.GAPING,
             BehaviorState.NEED,
-            BehaviorState.RECOVERING,
             BehaviorState.SICK,
             BehaviorState.TREATING,
         ):
@@ -276,45 +278,6 @@ class PetBehaviorStateMachine(QObject):
 
     def _resume_natural_behavior(self) -> None:
         self._apply_natural_behavior(self.inactivity_ms)
-
-    def _natural_pose_for_elapsed(self, elapsed: int) -> BehaviorState:
-        if elapsed >= self.LAYDOWN_AFTER_MS:
-            return BehaviorState.LAYDOWN
-        if elapsed >= self.SITTING_AFTER_MS:
-            return BehaviorState.SITTING
-        return BehaviorState.IDLE
-
-    def _start_touch_recovery(self, target: BehaviorState) -> None:
-        self._recovery_target = target
-
-        if target is BehaviorState.IDLE:
-            self._cancel_touch_recovery()
-            self._transition(BehaviorState.IDLE, "idle")
-            return
-
-        if target is BehaviorState.SITTING:
-            self._cancel_touch_recovery()
-            self._transition(BehaviorState.SITTING, "sitting")
-            return
-
-        self._transition(BehaviorState.RECOVERING, "sitting")
-        self.touch_recovery_timer.start(self.TOUCH_LAYDOWN_SITTING_MS)
-
-    def _finish_touch_recovery(self) -> None:
-        if self.state is not BehaviorState.RECOVERING:
-            return
-
-        if self._need_animation is not None:
-            self._cancel_touch_recovery()
-            self._transition(BehaviorState.NEED, self._need_animation)
-            return
-
-        self._cancel_touch_recovery()
-        self._transition(BehaviorState.LAYDOWN, "laydown")
-
-    def _cancel_touch_recovery(self) -> None:
-        self.touch_recovery_timer.stop()
-        self._recovery_target = None
 
     def _apply_natural_behavior(self, elapsed: int) -> None:
 
