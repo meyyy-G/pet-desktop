@@ -18,6 +18,8 @@ class PetAnimation(QObject):
         "diary_typing_exit",
         "settlement",
         "hover_exit",
+        "box_hover_enter",
+        "box_hover_exit",
     }
 
     FRAME_PATTERN = {
@@ -66,6 +68,9 @@ class PetAnimation(QObject):
         "settlement": 120,
         "hover": 160,
         "hover_exit": 220,
+        "box_hover_enter": 150,
+        "box_hover": 160,
+        "box_hover_exit": 150,
 
         "diary_open_enter": 150,
         "diary_open_exit": 150,
@@ -211,6 +216,25 @@ class PetAnimation(QObject):
 
         # 从 Diary 切换到其他页面时，离开打字姿势。
         frames_by_state["diary_typing_exit"] = self._load_sequence_range(
+            type_folder,
+            "hide_",
+            1,
+            12,
+        )
+
+        frames_by_state["box_hover_enter"] = self._load_sequence_range_reverse(
+            type_folder,
+            "hide_",
+            4,
+            1,
+        )
+        frames_by_state["box_hover"] = self._load_sequence_range(
+            type_folder,
+            "typing_",
+            1,
+            8,
+        )
+        frames_by_state["box_hover_exit"] = self._load_sequence_range(
             type_folder,
             "hide_",
             1,

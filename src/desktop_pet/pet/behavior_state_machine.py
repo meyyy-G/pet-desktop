@@ -162,6 +162,11 @@ class PetBehaviorStateMachine(QObject):
     def set_manual_frame(self, frame_index: int) -> None:
         self.animation.set_manual_frame(frame_index)
 
+    def update_manual_temporary_animation(self, animation_state: str) -> None:
+        if self.is_care_locked or self.state is not BehaviorState.TEMPORARY:
+            return
+        self.animation.set_state(animation_state, manual=True)
+
     def update_temporary_animation(self, animation_state: str) -> None:
         """临时流程内部切换动画，例如日记的进入、等待和打字阶段。"""
         if self.is_care_locked:

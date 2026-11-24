@@ -56,6 +56,11 @@ class RecordingBehavior:
     def set_manual_frame(self, frame_index):
         self.calls.append(("set_manual_frame", frame_index))
 
+    def update_manual_temporary_animation(self, animation):
+        self.calls.append(("update_manual_temporary_animation", animation))
+        if self.animation is not None:
+            self.animation.state = animation
+
     def register_interaction(self):
         self.calls.append(("register_interaction",))
 
@@ -272,6 +277,56 @@ def test_mouse_stroking_does_not_interrupt_busy_behavior():
     assert behavior.calls == []
 
 
+def test_box_cat_hides_then_wags_tail_from_mouse_movement():
+    controller, behavior, _decay, _events = make_controller(PetState())
+    controller.diary_visible = True
+    behavior.state = BehaviorState.TEMPORARY
+    behavior.animation.state = "diary_waiting"
+
+    result = controller.hover_moved(20)
+
+    assert result.accepted
+    assert behavior.calls == [
+        ("update_temporary_animation", "box_hover_enter"),
+    ]
+
+    controller.animation_finished("box_hover_enter")
+    assert behavior.calls[-2:] == [
+        ("update_manual_temporary_animation", "box_hover"),
+        ("set_manual_frame", 0),
+    ]
+
+    controller.hover_moved(controller.HOVER_PIXELS_PER_FRAME)
+    assert behavior.calls[-1] == ("set_manual_frame", 1)
+
+    controller.finish_hover()
+    assert behavior.calls[-1] == (
+        "update_temporary_animation",
+        "box_hover_exit",
+    )
+
+    controller.animation_finished("box_hover_exit")
+    assert behavior.calls[-1] == (
+        "update_temporary_animation",
+        "diary_waiting",
+    )
+
+
+def test_box_cat_hover_does_not_replace_real_diary_typing():
+    controller, behavior, _decay, _events = make_controller(PetState())
+    controller.diary_visible = True
+    controller.is_diary_page_active = True
+    controller.has_started_typing = True
+    behavior.state = BehaviorState.TEMPORARY
+    behavior.animation.state = "diary_typing"
+
+    result = controller.hover_moved(20)
+
+    assert not result.accepted
+    assert result.reason == "behavior_busy"
+    assert behavior.calls == []
+
+
 def test_single_click_while_sleeping_requests_confirmation_without_waking():
     controller, behavior, decay, events = make_controller(PetState())
     controller.sleep()
@@ -363,6 +418,42 @@ def test_opening_diary_does_not_interrupt_sleep_and_resumes_diary_after_sleep():
         ("finish_temporary",),
         ("play_temporary", "diary_waiting"),
     ]
+
+
+def test_diary_activity_during_sleep_is_restored_after_sleep_completes():
+    controller, behavior, _decay, _events = make_controller(PetState())
+    controller.sleep()
+    controller.open_diary("home")
+    behavior.calls.clear()
+
+    controller.diary_page_changed("diary")
+    typing = controller.start_typing()
+
+    assert typing.accepted and typing.reason == "deferred_until_wake"
+    assert controller.has_started_typing
+    assert behavior.current_animation == "sleeping"
+    assert behavior.calls == []
+
+    behavior.complete_temporary()
+    controller.animation_finished("settlement")
+
+    assert behavior.calls[-1] == ("play_temporary", "diary_typing")
+
+
+def test_closing_diary_during_sleep_does_not_wake_or_settle_sleep():
+    controller, behavior, decay, _events = make_controller(PetState())
+    controller.sleep()
+    controller.open_diary("home")
+    behavior.calls.clear()
+
+    result = controller.close_diary()
+
+    assert result.accepted
+    assert not controller.diary_visible
+    assert controller.is_sleeping
+    assert behavior.current_animation == "sleeping"
+    assert behavior.calls == []
+    assert decay.calls == []
 
 
 def test_care_lock_blocks_normal_interactions_and_replays_hint():

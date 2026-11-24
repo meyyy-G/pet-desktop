@@ -68,6 +68,8 @@ class PetController(QObject):
     HOVER_MAX_EVENT_DISTANCE = 20.0
     HOVER_FIRST_FRAME = 4
     HOVER_LAST_FRAME = 12
+    BOX_HOVER_FIRST_FRAME = 0
+    BOX_HOVER_LAST_FRAME = 7
 
     def __init__(
         self,
@@ -91,6 +93,10 @@ class PetController(QObject):
         self._hover_active = False
         self._hover_distance = 0.0
         self._hover_frame = self.HOVER_FIRST_FRAME
+        self._box_hover_active = False
+        self._box_hover_ready = False
+        self._box_hover_distance = 0.0
+        self._box_hover_frame = self.BOX_HOVER_FIRST_FRAME
         self.behavior.temporary_finished.connect(self._temporary_finished)
 
     def request(self, request: PetActionRequest) -> ActionResult:
@@ -244,6 +250,31 @@ class PetController(QObject):
     def hover_moved(self, distance: float) -> ActionResult:
         if distance <= 0:
             return ActionResult(False, "no_movement")
+        if self._box_hover_active:
+            if not self._box_hover_ready:
+                return ActionResult(True)
+            self._box_hover_distance += min(
+                distance,
+                self.HOVER_MAX_EVENT_DISTANCE,
+            )
+            if self._box_hover_distance >= self.HOVER_PIXELS_PER_FRAME:
+                self._box_hover_distance -= self.HOVER_PIXELS_PER_FRAME
+                self._box_hover_frame += 1
+                if self._box_hover_frame > self.BOX_HOVER_LAST_FRAME:
+                    self._box_hover_frame = self.BOX_HOVER_FIRST_FRAME
+                self.behavior.set_manual_frame(self._box_hover_frame)
+            return ActionResult(True)
+        if (
+            self.diary_visible
+            and self.behavior.state is BehaviorState.TEMPORARY
+            and self.behavior.current_animation == "diary_waiting"
+        ):
+            self._box_hover_active = True
+            self._box_hover_ready = False
+            self._box_hover_distance = 0.0
+            self._box_hover_frame = self.BOX_HOVER_FIRST_FRAME
+            self.behavior.update_temporary_animation("box_hover_enter")
+            return ActionResult(True)
         if not self._hover_active:
             if self.behavior.state not in {
                 BehaviorState.IDLE,
@@ -271,6 +302,15 @@ class PetController(QObject):
         return ActionResult(True)
 
     def finish_hover(self) -> ActionResult:
+        if self._box_hover_active:
+            self._reset_box_hover_tracking()
+            if (
+                self.behavior.state is BehaviorState.TEMPORARY
+                and self.behavior.current_animation
+                in ("box_hover_enter", "box_hover")
+            ):
+                self.behavior.update_temporary_animation("box_hover_exit")
+            return ActionResult(True)
         if not self._hover_active:
             return ActionResult(False, "not_hovering")
         self._reset_hover_tracking()
@@ -292,29 +332,39 @@ class PetController(QObject):
             return ActionResult(False, "not_diary_page")
         if self.has_started_typing:
             return ActionResult(False, "already_typing")
+        if self.is_sleeping:
+            self.has_started_typing = True
+            return ActionResult(True, "deferred_until_wake")
         if self.behavior.current_animation in (
             "diary_open_enter",
             "diary_open_exit",
         ):
             self.typing_requested_during_open = True
             return ActionResult(True, "queued")
+        self._reset_box_hover_tracking()
         self.has_started_typing = True
         self.behavior.update_temporary_animation("diary_typing_enter")
         return ActionResult(True)
 
     def close_diary(self) -> ActionResult:
+        self._reset_box_hover_tracking()
         self.diary_visible = False
         self.is_diary_page_active = False
         self.has_started_typing = False
         self.typing_requested_during_open = False
+        if self.is_sleeping:
+            return ActionResult(True)
         self.behavior.finish_temporary()
         return ActionResult(True)
 
     def diary_page_changed(self, page_name: str) -> ActionResult:
+        self._reset_box_hover_tracking()
         is_diary_page = page_name == "diary"
         if is_diary_page:
             self.is_diary_page_active = True
             self.has_started_typing = False
+            if self.is_sleeping:
+                return ActionResult(True)
             if self.behavior.current_animation not in (
                 "diary_open_enter",
                 "diary_open_exit",
@@ -330,6 +380,8 @@ class PetController(QObject):
         self.is_diary_page_active = False
         self.has_started_typing = False
         self.typing_requested_during_open = False
+        if self.is_sleeping:
+            return ActionResult(True)
         if self.behavior.current_animation in (
             "diary_open_enter",
             "diary_open_exit",
@@ -342,6 +394,22 @@ class PetController(QObject):
         return ActionResult(True)
 
     def animation_finished(self, animation_state: str) -> None:
+        if animation_state == "box_hover_enter":
+            if self._box_hover_active and self.diary_visible:
+                self._box_hover_ready = True
+                self.behavior.update_manual_temporary_animation("box_hover")
+                self.behavior.set_manual_frame(self._box_hover_frame)
+            elif self.diary_visible:
+                self.behavior.update_temporary_animation("diary_waiting")
+            else:
+                self.behavior.finish_temporary()
+            return
+        if animation_state == "box_hover_exit":
+            if self.diary_visible:
+                self.behavior.update_temporary_animation("diary_waiting")
+            else:
+                self.behavior.finish_temporary()
+            return
         if animation_state == "hover_exit":
             self.behavior.finish_temporary()
             return
@@ -452,6 +520,7 @@ class PetController(QObject):
         self.behavior.play_temporary("settlement")
 
     def _resume_diary_companion(self) -> None:
+        self._reset_box_hover_tracking()
         if not self.diary_visible:
             return
         if self.is_diary_page_active and self.has_started_typing:
@@ -463,3 +532,9 @@ class PetController(QObject):
         self._hover_active = False
         self._hover_distance = 0.0
         self._hover_frame = self.HOVER_FIRST_FRAME
+
+    def _reset_box_hover_tracking(self) -> None:
+        self._box_hover_active = False
+        self._box_hover_ready = False
+        self._box_hover_distance = 0.0
+        self._box_hover_frame = self.BOX_HOVER_FIRST_FRAME
