@@ -47,7 +47,7 @@ PetDesktop 希望把桌面陪伴与日常记录放进同一个轻量空间里：
 ### 与小猫的互动
 
 <p align="center">
-  <img src="assets/images/drag.gif" width="180" height="260" alt="拖拽">
+  <img src="assets/images/drag.gif?v=20261125" width="180" height="260" alt="拖拽">
   <img src="assets/images/touch.gif" width="180" height="260" alt="抚摸小猫">
   <img src="assets/images/state.gif" width="180" height="260" alt="查看小猫状态">
 </p>
